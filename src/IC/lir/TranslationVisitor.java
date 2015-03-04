@@ -81,7 +81,7 @@ public class TranslationVisitor implements Visitor{
 	private Map<String, List<String>> methodFullNamesMap;	
 	private IDSymbolsKinds currentMethodKind; // virtual or static
 	private Boolean isMainMethod;
-	private Map<String, Integer> methodStackFrames;
+	private Map<String, List<String>> methodVariablesMap;
 	
 	public TranslationVisitor() {
 		this.classLayouts = new HashMap<String,ClassLayout>();
@@ -99,7 +99,7 @@ public class TranslationVisitor implements Visitor{
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
 		this.arrs = new HashMap<String,Integer>();
 		
-		this.methodStackFrames = new HashMap<String, Integer>();
+		this.methodVariablesMap = new HashMap<String, List<String>>();
 	}
 
 	public void printInstructions() {
@@ -118,8 +118,8 @@ public class TranslationVisitor implements Visitor{
 	}
 	
 	
-	public Map<String, Integer> getMethodLabels() {
-		return this.methodStackFrames;
+	public Map<String, List<String>> getMethodVariablesMap() {
+		return this.methodVariablesMap;
 	}
 
 	public void translate(Program root)  {
@@ -194,8 +194,7 @@ public class TranslationVisitor implements Visitor{
 		// add method label
 		currentClassName = method.getSymbolsTable().getId();
 		String methodFullName = classLayouts.get(currentClassName).getMethodString(method.getName());
-		this.methodStackFrames.put(methodFullName, 
-				method.getSymbolsTable().findChildSymbolTable(method.getName()).getMethodStackFrameSize());
+		this.methodVariablesMap.put(methodFullName, method.getSymbolsTable().findChildSymbolTable(method.getName()).getMethodStackFrameVariables());
 		//emit(fullMethodName+":");
 		instructions.add(new LabelInstr(labelHandler.requestStr(methodFullName)));
 

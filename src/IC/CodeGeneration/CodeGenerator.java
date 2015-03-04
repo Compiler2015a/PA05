@@ -12,15 +12,15 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private final String EPILOGUE_COMMENT = "epilogue";
 	
 	private List<Instruction> instructionsList;
-	private Map<String, Integer> methodStackFrames;
+	private Map<String, List<String>> methodVariablesMap;
 	
 	private StringBuffer assemblyStrBuffer;
 	
 	private String currentMethod;
 	
-	public CodeGenerator(List<Instruction> instructionsList, Map<String, Integer> methodStackFrames) {
+	public CodeGenerator(List<Instruction> instructionsList, Map<String, List<String>> methodVariablesMap) {
 		this.instructionsList = instructionsList;
-		this.methodStackFrames = methodStackFrames;
+		this.methodVariablesMap = methodVariablesMap;
 		this.assemblyStrBuffer = new StringBuffer("");
 		
 		this.currentMethod = null;
@@ -59,7 +59,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(LabelInstr instr) {
 		String labelName = instr.label.name;
-		boolean isMethodLabel = (methodStackFrames.keySet().contains(labelName));
+		boolean isMethodLabel = (methodVariablesMap.keySet().contains(labelName));
 		if (isMethodLabel) {
 			if (currentMethod != null) 
 				generateEpilogueStatements(currentMethod);
@@ -145,7 +145,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private void generatePrologueStatements(String methodName) {
 		addAssemblyLineWithComment("push %ebp", PROLOGUE_COMMENT);
 		addAssemblyLine("mov %esp, %ebp");
-		addAssemblyLine("sub $" + methodStackFrames.get(methodName) + ", %esp");
+		addAssemblyLine("sub $" + (methodVariablesMap.get(methodName).size() * 4) + ", %esp");
 	}
 	
 	private void generateEpilogueStatements(String methodName) {

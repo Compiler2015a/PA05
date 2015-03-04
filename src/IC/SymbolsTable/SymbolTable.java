@@ -126,17 +126,17 @@ public class SymbolTable {
 		  this.parentSymbolTable = parentSymbolTable;
 	  }
 	  
-	  public Integer getMethodStackFrameSize() {
+	  public List<String> getMethodStackFrameVariables() {
 		  if ((this.tableType != SymbolTableTypes.METHOD) && (this.tableType != SymbolTableTypes.STATEMENT_BLOCK))
 			  return null;
+		  List<String> stackFrameVariables = new ArrayList<String>();
+		  for (SymbolEntry entry : entries.values()) 
+			  stackFrameVariables.add(entry.getGlobalId());
 		  
-		  int stackFrameSize = 0;
 		  for (SymbolTable symbolTableChild : children.values()) 
-			  stackFrameSize += symbolTableChild.getMethodStackFrameSize();
-		  int variablesCounter = entries.keySet().size();
-		  stackFrameSize += variablesCounter * 4;
+			  stackFrameVariables.addAll(symbolTableChild.getMethodStackFrameVariables());
 		  
-		  return stackFrameSize;
+		  return stackFrameVariables;
 	  }
 	  
 	  @Override

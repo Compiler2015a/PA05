@@ -126,6 +126,19 @@ public class SymbolTable {
 		  this.parentSymbolTable = parentSymbolTable;
 	  }
 	  
+	  public Integer getMethodStackFrameSize() {
+		  if ((this.tableType != SymbolTableTypes.METHOD) && (this.tableType != SymbolTableTypes.STATEMENT_BLOCK))
+			  return null;
+		  
+		  int stackFrameSize = 0;
+		  for (SymbolTable symbolTableChild : children.values()) 
+			  stackFrameSize += symbolTableChild.getMethodStackFrameSize();
+		  int variablesCounter = entries.keySet().size();
+		  stackFrameSize += variablesCounter * 4;
+		  
+		  return stackFrameSize;
+	  }
+	  
 	  @Override
 	  public String toString() {
 		  if (this.tableType != SymbolTableTypes.STATEMENT_BLOCK)

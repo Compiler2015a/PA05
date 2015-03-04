@@ -2,17 +2,28 @@ package IC.CodeGeneration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import IC.lir.Instructions.*;
 
 public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
+	private final String PROLOGUE_COMMENT = "prologue";
+	private final String EPILOGUE_COMMENT = "epilogue";
+	
 	private List<Instruction> instructionsList;
+	private Map<String, Integer> methodStackFrames;
+	
 	private StringBuffer assemblyStrBuffer;
 	
-	public CodeGenerator(List<Instruction> instructionsList) {
+	private String currentMethod;
+	
+	public CodeGenerator(List<Instruction> instructionsList, Map<String, Integer> methodStackFrames) {
 		this.instructionsList = instructionsList;
+		this.methodStackFrames = methodStackFrames;
 		this.assemblyStrBuffer = new StringBuffer("");
+		
+		this.currentMethod = null;
 	}
 	
 	public void generateCode() {
@@ -47,8 +58,18 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(LabelInstr instr) {
-		// TODO Auto-generated method stub
-		
+		String labelName = instr.label.name;
+		boolean isMethodLabel = (methodStackFrames.keySet().contains(labelName));
+		if (isMethodLabel) {
+			if (currentMethod != null) 
+				generateEpilogueStatements(currentMethod);
+			currentMethod = labelName;
+			dropLine();
+			addAssemblyComment("-------------------");
+		}
+		addAssemblyLine(instr.toString());
+		if (isMethodLabel)
+			generatePrologueStatements(currentMethod);
 	}
 
 	@Override
@@ -107,5 +128,29 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
 	private void addAssemblyLine(String line) {
 		assemblyStrBuffer.append(line + '\n');
+	}
+	
+	private void addAssemblyLineWithComment(String line, String comment) {
+		assemblyStrBuffer.append(line + "\t# " + comment + '\n');
+	}
+	
+	private void addAssemblyComment(String comment) {
+		assemblyStrBuffer.append("# " + comment + '\n');
+	}
+	
+	private void dropLine() {
+		assemblyStrBuffer.append('\n');
+	}
+	
+	private void generatePrologueStatements(String methodName) {
+		addAssemblyLineWithComment("push %ebp", PROLOGUE_COMMENT);
+		addAssemblyLine("mov %esp, %ebp");
+		addAssemblyLine("sub $" + methodStackFrames.get(methodName) + ", %esp");
+	}
+	
+	private void generateEpilogueStatements(String methodName) {
+		addAssemblyLineWithComment("mov %ebp, %esp", EPILOGUE_COMMENT);
+		addAssemblyLine("pop %ebp");
+		addAssemblyLine("ret");
 	}
 }

@@ -5,6 +5,7 @@ import java.io.FileReader;
 
 import java_cup.runtime.Symbol;
 import IC.AST.*;
+import IC.CodeGeneration.CodeGenerator;
 import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
@@ -87,6 +88,9 @@ public class Compiler {
 			
 			if(isInArgs(args, "-print-lir"))
 				trv.printInstructions();
+			
+			//Code generation
+//			IC.lir.Instructions.Visitor codeGenerator = new CodeGenerator(instructionsList, methodVariablesMap)
 			
 		} catch (FileNotFoundException e) {
 			System.out.println(e);

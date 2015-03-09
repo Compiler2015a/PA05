@@ -99,14 +99,31 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(JumpInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("JMP "+instr.label);
 	}
 
 	@Override
 	public void visit(CondJumpInstr instr) {
-		// TODO Auto-generated method stub
-		
+		switch(instr.cond) {
+		case True:
+			addAssemblyLine("JNZ "+instr.label);
+			break;
+		case False:
+			addAssemblyLine("JZ "+instr.label);
+			break;
+		case G:
+			addAssemblyLine("JG "+instr.label);
+			break;
+		case GE:
+			addAssemblyLine("JGE "+instr.label);
+			break;
+		case L:
+			addAssemblyLine("JL "+instr.label);
+			break;
+		case LE:
+			addAssemblyLine("JLE "+instr.label);
+			break;
+		}
 	}
 
 	@Override

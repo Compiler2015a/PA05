@@ -12,15 +12,15 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private final String EPILOGUE_COMMENT = "epilogue";
 	
 	private List<Instruction> instructionsList;
-	private Map<String, List<String>> methodVariablesMap;
+	private Map<String, AssemblyMethod> assemblyMethods;
 	
 	private StringBuffer assemblyStrBuffer;
 	
 	private String currentMethod;
 	
-	public CodeGenerator(List<Instruction> instructionsList, Map<String, List<String>> methodVariablesMap) {
+	public CodeGenerator(List<Instruction> instructionsList, Map<String, AssemblyMethod> assemblyMethods) {
 		this.instructionsList = instructionsList;
-		this.methodVariablesMap = methodVariablesMap;
+		this.assemblyMethods = assemblyMethods;
 		this.assemblyStrBuffer = new StringBuffer("");
 		
 		this.currentMethod = null;
@@ -34,7 +34,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
 	@Override
 	public void visit(MoveInstr instr) {
-		// TODO Auto-generated method stub
+		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.src) + ", %eax");
+		addAssemblyLine("mov %eax, " + getCurrentAssemblyMethod().getStackLocation(instr.dst));
+
 		
 	}
 
@@ -59,7 +61,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(LabelInstr instr) {
 		String labelName = instr.label.name;
-		boolean isMethodLabel = (methodVariablesMap.keySet().contains(labelName));
+		boolean isMethodLabel = (assemblyMethods.keySet().contains(labelName));
 		if (isMethodLabel) {
 			if (currentMethod != null) 
 				generateEpilogueStatements(currentMethod);
@@ -74,8 +76,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(MoveArrayInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.base) + ", %eax");
+		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.offset) + ", %ebx");
+		if (instr.isLoad)
+			addAssemblyLine(String.format("mov (%s,%s,4), %s)", "%eax", "%ebx", getCurrentAssemblyMethod().getStackLocation(instr.mem);
+		else
+			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getCurrentAssemblyMethod().getStackLocation(instr.mem), "%eax", "%ebx");
 	}
 
 	@Override
@@ -86,7 +92,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(ArrayLengthInstr instr) {
-		// TODO Auto-generated method stub
+		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.arr) + ", %eax");
+		addAssemblyLine("mov -4(%eax), %eax)");
+		addAssemblyLine("mov %eax, " + getCurrentAssemblyMethod().getStackLocation(instr.dst));
 		
 	}
 
@@ -145,12 +153,17 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private void generatePrologueStatements(String methodName) {
 		addAssemblyLineWithComment("push %ebp", PROLOGUE_COMMENT);
 		addAssemblyLine("mov %esp, %ebp");
-		addAssemblyLine("sub $" + (methodVariablesMap.get(methodName).size() * 4) + ", %esp");
+		addAssemblyLine("sub $" + (getCurrentAssemblyMethod().getSize() * 4) + ", %esp");
 	}
 	
 	private void generateEpilogueStatements(String methodName) {
 		addAssemblyLineWithComment("mov %ebp, %esp", EPILOGUE_COMMENT);
 		addAssemblyLine("pop %ebp");
 		addAssemblyLine("ret");
+	}
+
+	private AssemblyMethod getCurrentAssemblyMethod() {
+		AssemblyMethod currentAssemblyMethod = (AssemblyMethod)assemblyMethods.get(currentMethod);
+		return  currentAssemblyMethod;
 	}
 }

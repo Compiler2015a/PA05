@@ -78,15 +78,20 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("mov " + getOperandReference(instr.base) + ", %eax");
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if (instr.isLoad)
-			addAssemblyLine(String.format("mov (%s,%s,4), %s)", "%eax", "%ebx", getOperandReference(instr.mem)));
+			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
 		else
 			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
 	}
 
 	@Override
 	public void visit(MoveFieldInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov "+getOperandReference(instr.base)+", %eax");
+		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
+		if(instr.isLoad) {
+			addAssemblyLine(String.format("move (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
+		} else {
+			addAssemblyLine(String.format("move %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+		}
 	}
 
 	@Override

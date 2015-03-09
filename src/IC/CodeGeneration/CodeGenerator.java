@@ -1,6 +1,5 @@
 package IC.CodeGeneration;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,28 +33,28 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
 	@Override
 	public void visit(MoveInstr instr) {
-		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.src) + ", %eax");
-		addAssemblyLine("mov %eax, " + getCurrentAssemblyMethod().getStackLocation(instr.dst));
-
-		
+		addAssemblyLine("mov " + getOperandReference(instr.src) + ", %eax");
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override
 	public void visit(BinOpInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override
 	public void visit(CompareInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
 	}
 
 	@Override
 	public void visit(UnaryOpInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLine(String.format("%s %s", instr.op, "%eax"));
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override
@@ -76,12 +75,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(MoveArrayInstr instr) {
-		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.base) + ", %eax");
-		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.offset) + ", %ebx");
+		addAssemblyLine("mov " + getOperandReference(instr.base) + ", %eax");
+		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if (instr.isLoad)
-			addAssemblyLine(String.format("mov (%s,%s,4), %s)", "%eax", "%ebx", getCurrentAssemblyMethod().getStackLocation(instr.mem);
+			addAssemblyLine(String.format("mov (%s,%s,4), %s)", "%eax", "%ebx", getOperandReference(instr.mem)));
 		else
-			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getCurrentAssemblyMethod().getStackLocation(instr.mem), "%eax", "%ebx");
+			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
 	}
 
 	@Override
@@ -92,9 +91,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(ArrayLengthInstr instr) {
-		addAssemblyLine("mov " + getCurrentAssemblyMethod().getStackLocation(instr.arr) + ", %eax");
+		addAssemblyLine("mov " + getOperandReference(instr.arr) + ", %eax");
 		addAssemblyLine("mov -4(%eax), %eax)");
-		addAssemblyLine("mov %eax, " + getCurrentAssemblyMethod().getStackLocation(instr.dst));
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		
 	}
 
@@ -124,14 +123,20 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(LibraryCall instr) {
-		// TODO Auto-generated method stub
-		
+		for (int i = instr.args.size() - 1; i >= 0; i--) {
+			addAssemblyLine("mov " + getOperandReference(instr.args.get(i)) + ", %eax");
+			addAssemblyLine("push %eax");
+		}
+		addAssemblyLine("call " + instr.func.name);
+		if (instr.args.size() > 0)
+			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override
 	public void visit(ReturnInstr instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLine("ret");
 	}
 	
 	private void addAssemblyLine(String line) {
@@ -153,7 +158,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private void generatePrologueStatements(String methodName) {
 		addAssemblyLineWithComment("push %ebp", PROLOGUE_COMMENT);
 		addAssemblyLine("mov %esp, %ebp");
-		addAssemblyLine("sub $" + (getCurrentAssemblyMethod().getSize() * 4) + ", %esp");
+		addAssemblyLine("sub $" + (getCurrentAssemblyMethod().getStackFrameSize() * 4) + ", %esp");
 	}
 	
 	private void generateEpilogueStatements(String methodName) {
@@ -165,5 +170,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private AssemblyMethod getCurrentAssemblyMethod() {
 		AssemblyMethod currentAssemblyMethod = (AssemblyMethod)assemblyMethods.get(currentMethod);
 		return  currentAssemblyMethod;
+	}
+	
+	private String getOperandReference(Operand operand) {
+		if (operand instanceof Immediate)
+			return "&" + Integer.toString(((Immediate)operand).val);
+		else 
+			return Integer.toString(getCurrentAssemblyMethod().getStackOffset(operand.toString())) + "(%ebp)";
 	}
 }

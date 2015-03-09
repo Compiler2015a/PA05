@@ -16,7 +16,7 @@ public class AssemblyMethod {
 		this.usedRegistersCount = usedRegistersCount;
 	}
 
-	public String getStackLocation(String operand) {
+	public int getStackOffset(String operand) {
 		// Checking if this is a virtual register operand:
 		String virtualRegisterPattern = "t[0-9]+";
 		Pattern pattern = Pattern.compile(virtualRegisterPattern);
@@ -30,7 +30,7 @@ public class AssemblyMethod {
 			offset = 8 + params.indexOf(operand) * 4;
 		if (localVariables.contains(operand))
 			offset = -4 * (usedRegistersCount + localVariables.indexOf(operand) + 1);
-		return Integer.toString(offset) + "(%ebp)";
+		return offset;
 	}
 	
 	public int getStackFrameSize() {

@@ -10,9 +10,9 @@ public class AssemblyMethod {
 	private List<String> params;
 	private int usedRegistersCount;
 	
-	public AssemblyMethod(List<String> localVariables, List<String> params, int usedRegistersCount) {
-		this.localVariables = localVariables;
+	public AssemblyMethod(List<String> params, List<String> localVariables, int usedRegistersCount) {
 		this.params = params;
+		this.localVariables = localVariables;
 		this.usedRegistersCount = usedRegistersCount;
 	}
 

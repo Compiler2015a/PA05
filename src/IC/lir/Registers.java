@@ -6,11 +6,12 @@ import java.util.Map;
 import IC.lir.Instructions.Reg;
 
 public class Registers {
+	public static final String DUMMY_REG = "Rdummy";
 	Map<Integer, Reg> regs;
 	
 	public Registers() {
 		this.regs = new HashMap<Integer,Reg>();
-		regs.put(-1,new Reg("Rdummy"));
+		regs.put(-1,new Reg(DUMMY_REG));
 	}
 	
 	/**

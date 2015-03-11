@@ -3,6 +3,7 @@ package IC.CodeGeneration;
 import java.util.List;
 import java.util.Map;
 
+import IC.lir.Registers;
 import IC.lir.Instructions.*;
 
 public class CodeGenerator implements IC.lir.Instructions.Visitor {
@@ -140,7 +141,8 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("call " + instr.func.name);
 		if (instr.args.size() > 0)
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
-		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		if (!instr.dst.name.equals(Registers.DUMMY_REG))
+			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		
 	}
 
@@ -156,7 +158,8 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("call *" + (((Immediate)instr.func).val * 4) + "(%eax)");
 		if (instr.args.size() > 0)
 			addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
-		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		if (!instr.dst.name.equals(Registers.DUMMY_REG))
+			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override
@@ -168,7 +171,8 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("call " + instr.func.name);
 		if (instr.args.size() > 0)
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
-		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		if (!instr.dst.name.equals(Registers.DUMMY_REG))
+			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override

@@ -83,6 +83,7 @@ public class TranslationVisitor implements Visitor{
 	private IDSymbolsKinds currentMethodKind; // virtual or static
 	private Boolean isMainMethod;
 	private Map<String, AssemblyMethod> methodVariablesMap;
+	private int currentMethodRegisterCounter;
 	
 	public TranslationVisitor() {
 		this.classLayouts = new HashMap<String,ClassLayout>();
@@ -197,6 +198,7 @@ public class TranslationVisitor implements Visitor{
 		String methodFullName = classLayouts.get(currentClassName).getMethodString(method.getName());
 		
 		//this.methodVariablesMap.put(methodFullName, method.getSymbolsTable().findChildSymbolTable(method.getName()).getMethodStackFrameVariables());
+		currentMethodRegisterCounter = 0;
 		//emit(fullMethodName+":");
 		instructions.add(new LabelInstr(labelHandler.requestStr(methodFullName)));
 
@@ -207,6 +209,13 @@ public class TranslationVisitor implements Visitor{
 		for (Statement stmt : method.getStatements()) {
 			stmt.accept(this);
 		}
+		
+		List<String> assemblyMethodParams = method.getSymbolsTable().findChildSymbolTable(
+				method.getName()).getMethodStackFrameParams();
+		List<String> assemblyMethodVariables = method.getSymbolsTable().findChildSymbolTable(
+				method.getName()).getMethodStackFrameVariables();
+		this.methodVariablesMap.put(methodFullName, new AssemblyMethod(
+				assemblyMethodParams, assemblyMethodVariables, currentMethodRegisterCounter));
 		
 		if (isMainMethod) {
 			instructions.add(new LabelInstr(labelHandler.requestStr("_PROGRAM_END")));
@@ -238,7 +247,7 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(Assignment assignment) {
-		target++;
+		incrementRegisterTarget(1);
 		assignment.getAssignment().accept(this);
 		target--;
 		assignmentCall=true;
@@ -336,7 +345,7 @@ public class TranslationVisitor implements Visitor{
 		if (localVariable.hasInitValue()) {
 			localVariable.getInitValue().accept(this);
 			instructions.add(new MoveInstr(registers.request(target), new Memory(localVariable.getSymbolEntry().getGlobalId())));
-			target++;
+			incrementRegisterTarget(1);
 		}
 		return null;
 	}
@@ -382,7 +391,7 @@ public class TranslationVisitor implements Visitor{
 		}
 
 		int assignmentTarget = target;
-		target+=3;
+		incrementRegisterTarget(3);
 
 		boolean tmp = assignmentCall;
 		assignmentCall = false;
@@ -414,9 +423,10 @@ public class TranslationVisitor implements Visitor{
 
 	private void checkGTLengthAndEmit(Reg index,Reg array)
 	{
-		target++;
+		incrementRegisterTarget(1);
 		int labelCounter = labelHandler.increaseLabelsCounter();
-		Reg currentSize=registers.request(++target);
+		incrementRegisterTarget(1);
+		Reg currentSize=registers.request(target);
 		instructions.add(new ArrayLengthInstr(array, currentSize));	
 		instructions.add(new CompareInstr(index, currentSize));
 		instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.G));
@@ -442,7 +452,7 @@ public class TranslationVisitor implements Visitor{
 			for (Expression arg : call.getArguments()) {
 				arg.accept(this);
 				operands.add(registers.request(target));
-				target++;
+				incrementRegisterTarget(1);
 			}
 			target = unusedMethodTarget;
 			int retTrarget = call.getMethodType().getReturnType().isVoidType() ? -1 : target;
@@ -458,7 +468,7 @@ public class TranslationVisitor implements Visitor{
 				arg.accept(this);
 				paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), registers.request(target)));
 				i++;
-				target++;
+				incrementRegisterTarget(1);
 			}
 			target = unusedMethodTarget;
 			int retTrarget = call.getMethodType().getReturnType().isVoidType() ? -1 : target;
@@ -492,7 +502,7 @@ public class TranslationVisitor implements Visitor{
 		String clsName = call.isExternal() ?
 				call.getLocation().getEntryType().toString() : this.currentClassName;
 				int unusedMethodTarget = target;
-				target++;
+				incrementRegisterTarget(1);
 				List<ParamOpPair> paramOpRegs = new ArrayList<ParamOpPair>();
 				String virtualCallMethodFullName = classLayouts.get(clsName).getMethodString(call.getName());
 				List<String> methodParams = this.methodFullNamesMap.get(virtualCallMethodFullName);
@@ -501,7 +511,7 @@ public class TranslationVisitor implements Visitor{
 					arg.accept(this);
 					paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), registers.request(target)));
 					i++;
-					target++;
+					incrementRegisterTarget(1);
 				}
 				Immediate funcIndex = new Immediate(classLayouts.get(clsName).getMethodIndex(call.getName()));
 				target = unusedMethodTarget;
@@ -532,7 +542,7 @@ public class TranslationVisitor implements Visitor{
 	public Object visit(NewArray newArray) {
 
 		List<Operand> args = new ArrayList<Operand>();
-		target++;
+		incrementRegisterTarget(1);
 
 		newArray.getSize().accept(this); 
 		instructions.add(new BinOpInstr(new Immediate(4), registers.request(target), Operator.MUL)); //multiply size by 4
@@ -565,7 +575,7 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(Length length) {
-		target++;
+		incrementRegisterTarget(1);
 		length.getArray().accept(this);
 		target--;
 		checkNullRefAndEmit(registers.request(target + 1));
@@ -593,7 +603,7 @@ public class TranslationVisitor implements Visitor{
 	@Override
 	public Object visit(MathBinaryOp binaryOp) {
 		binaryOp.getFirstOperand().accept(this);
-		target++;
+		incrementRegisterTarget(1);
 		binaryOp.getSecondOperand().accept(this);
 		//String instruction="";
 		Operator op;
@@ -644,13 +654,13 @@ public class TranslationVisitor implements Visitor{
 	@Override
 	public Object visit(LogicalBinaryOp binaryOp) {
 
-		//target++;
+		//incrementRegisterTarget(1);
 		//binaryOp.getSecondOperand().accept(this);
 		int labelCounter =labelHandler.increaseLabelsCounter();
 		switch(binaryOp.getOperator()) {
 		case GT:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -667,7 +677,7 @@ public class TranslationVisitor implements Visitor{
 			break;
 		case GTE:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -686,7 +696,7 @@ public class TranslationVisitor implements Visitor{
 			break;
 		case EQUAL:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -705,7 +715,7 @@ public class TranslationVisitor implements Visitor{
 			break;
 		case NEQUAL:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -724,7 +734,7 @@ public class TranslationVisitor implements Visitor{
 			break;
 		case LT:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -743,7 +753,7 @@ public class TranslationVisitor implements Visitor{
 			break;
 		case LTE:
 			binaryOp.getSecondOperand().accept(this);
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getFirstOperand().accept(this);
 			//emit("Compare R,"+target+",R"+(--target));
 			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
@@ -766,7 +776,7 @@ public class TranslationVisitor implements Visitor{
 			//emit("JumpTrue _end_label"+labels);
 			instructions.add(new CompareInstr(new Immediate(0), registers.request(target)));
 			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.True));
-			target++;
+			incrementRegisterTarget(1);
 			binaryOp.getSecondOperand().accept(this);
 			//emit("And R"+target+",R"+(--target));
 			//emit(CommonLabels.END_LABEL.toString()+labels);
@@ -794,7 +804,7 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(MathUnaryOp unaryOp) {
-		target++;
+		incrementRegisterTarget(1);
 		unaryOp.getOperand().accept(this);
 		target--;
 		instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
@@ -804,7 +814,7 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
-		target++;
+		incrementRegisterTarget(1);
 		unaryOp.getOperand().accept(this);
 		target--;
 		//emit("Move 1,R"+target);
@@ -858,7 +868,13 @@ public class TranslationVisitor implements Visitor{
 	{
 		return this.emitted.toString();
 	}
-
+	
+	private void incrementRegisterTarget(int value) {
+		incrementRegisterTarget(value);
+		if (target > this.currentMethodRegisterCounter)
+			this.currentMethodRegisterCounter = target;
+	}
+	
 	private List<String> generatMethodParamsList(Method method) {
 		List<String> output = new ArrayList<String>();
 		for (Formal formal : method.getFormals()) 
@@ -868,9 +884,10 @@ public class TranslationVisitor implements Visitor{
 
 	private void divisionCheck(Reg reg) {
 		_hasErrors[3] = true;
-		//        target+=2;
+		//        incrementRegisterTarget(2);
 		//        instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-		//		instructions.add(new MoveInstr(reg, registers.request(++target)));
+		//		incrementRegisterTarget(1);
+		//		instructions.add(new MoveInstr(reg, registers.request(target)));
 		//		instructions.add(new CompareInstr(registers.request(target), registers.request(--target)));
 		//		instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL), Cond.False));
 		//		instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
@@ -909,7 +926,6 @@ public class TranslationVisitor implements Visitor{
 		instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
 
 	}
-
 
 
 }

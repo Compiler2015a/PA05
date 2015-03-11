@@ -1,16 +1,26 @@
 package IC;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import java_cup.runtime.Symbol;
-import IC.AST.*;
+import IC.AST.ICClass;
+import IC.AST.PrettyPrinter;
+import IC.AST.Program;
 import IC.CodeGeneration.CodeGenerator;
-import IC.Parser.*;
+import IC.Parser.Lexer;
+import IC.Parser.LexicalError;
+import IC.Parser.LibLexer;
+import IC.Parser.LibParser;
+import IC.Parser.Parser;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
-import IC.SymbolsTable.*;
-import IC.Types.*;
+import IC.SymbolsTable.SymbolsTableBuilder;
+import IC.Types.TypeTableBuilder;
+import IC.Types.TypeValidator;
 import IC.lir.TranslationVisitor;
 
 public class Compiler {
@@ -80,6 +90,8 @@ public class Compiler {
 		//	ICRoot.accept(trv);
 			//System.out.println(trv.getEmissionString());
 			
+			writeAsmFile(icFile, assemblyCode);
+			
 			if(isInArgs(args, "-print-ast")) {
 				//Pretty-print the program to System.out
 				PrettyPrinter printer = new PrettyPrinter(args[0]);
@@ -95,10 +107,7 @@ public class Compiler {
 			
 			if(isInArgs(args, "-print-lir"))
 				trv.printInstructions();
-			
-			//Code generation
-//			IC.lir.Instructions.Visitor codeGenerator = new CodeGenerator(instructionsList, methodVariablesMap)
-			
+						
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
 		} catch (LexicalError e) {
@@ -122,5 +131,18 @@ public class Compiler {
 			if(args[i].equals(arg))
 				return true;
 		return false;
+	}
+	
+	/**
+	 * @param sourceFile source file that was compiled
+	 * @param code Assembly code to be written
+	 * @return
+	 * @throws IOException 
+	 */
+	private static void writeAsmFile(File sourceFile, String code) throws IOException {
+		BufferedWriter bw = new BufferedWriter(new FileWriter(
+				sourceFile.getParent()+"\\"+sourceFile.getName().substring(0, sourceFile.getName().lastIndexOf("."))+".s"));
+		bw.write(code);
+		bw.close();
 	}
 }

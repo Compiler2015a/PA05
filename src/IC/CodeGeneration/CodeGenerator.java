@@ -140,9 +140,10 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLineWithComment("mov "+getOperandReference(instr.base)+", %eax", instr.toString());
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if(instr.isLoad) {
-			addAssemblyLine(String.format("move (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
+			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
 		} else {
-			addAssemblyLine(String.format("move %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+			addAssemblyLine(String.format("mov"+((instr.mem instanceof Label && ((Label)instr.mem).isDVPtr)?"l":"")
+					+" %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
 		}
 		dropLine();
 	}
@@ -222,18 +223,20 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(LibraryCall instr) {
 		addAssemblyComment(instr.toString());
-		for (int i = instr.args.size() - 1; i >= 0; i--) {
+		for (int i = instr.args.size() - 1; i >= 0; i--) { //pushing parameters in reverse order
 			addAssemblyLine("mov " + getOperandReference(instr.args.get(i)) + ", %eax");
 			addAssemblyLine("push %eax");
 		}
-		addAssemblyLine("call " + instr.func.name);
+		
+		addAssemblyLine("call " + instr.func.name); //calling the function
 		if (instr.args.size() > 0)
-			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
+			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp"); //cutting back the stack
 		
 	
 		
-		if (!instr.dst.name.equals(Registers.DUMMY_REG))
+		if (!instr.dst.name.equals(Registers.DUMMY_REG)) //move result into destination register
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		
 		dropLine();
 	}
 
@@ -285,6 +288,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			Memory mem = (Memory)operand;
 			if (containsLiteralVar(stringLiterals, mem.name))
 				return "$" + mem.name;
+		}
+		if (operand instanceof Label && ((Label)operand).isDVPtr) {
+			return "$"+(Label)operand;
 		}
 
 		return Integer.toString(getCurrentAssemblyMethod().getStackOffset(operand.toString())) + "(%ebp)";

@@ -547,7 +547,7 @@ public class TranslationVisitor implements Visitor{
 		args.add(new Immediate(classLayouts.get(newClass.getName()).getAllocatedSize()));
 		instructions.add(new LibraryCall(labelHandler.requestStr("__allocateObject"), args , registers.request(target)));
 
-		instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(0), labelHandler.requestStr("_DV_"+newClass.getName()), false));
+		instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(0), /*labelHandler.requestStr*/new Label("_DV_"+newClass.getName(), true), false));
 		return null;
 	}
 

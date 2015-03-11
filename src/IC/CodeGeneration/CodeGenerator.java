@@ -77,8 +77,16 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(BinOpInstr instr) {
 		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
-		addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
-		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		if ((instr.op != Operator.DIV) && (instr.op != Operator.MOD)) {
+			addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		}
+		else {
+			addAssemblyLine("mov " + getOperandReference(instr.src) + ", %ebx");
+			addAssemblyLine("div %ebx");
+			String resultRegister = (instr.op == Operator.DIV) ? "%eax" : "%edx";
+			addAssemblyLine("mov " + resultRegister + ", " + getOperandReference(instr.dst));
+		}
 		dropLine();
 	}
 

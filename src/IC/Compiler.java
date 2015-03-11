@@ -72,7 +72,7 @@ public class Compiler {
 			trv.translate(ICRoot);
 		//	ICRoot.accept(trv);
 			//System.out.println(trv.getEmissionString());
-
+			
 			if(isInArgs(args, "-print-ast")) {
 				//Pretty-print the program to System.out
 				PrettyPrinter printer = new PrettyPrinter(args[0]);

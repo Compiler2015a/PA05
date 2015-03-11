@@ -34,28 +34,33 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
 	@Override
 	public void visit(MoveInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.src) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.src) + ", %eax", instr.toString());
 		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		dropLine();
 	}
 
 	@Override
 	public void visit(BinOpInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
 		addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
 		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		dropLine();
 	}
 
 	@Override
 	public void visit(CompareInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
-		addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
+		addAssemblyLine(String.format(
+				"%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+		dropLine();
 	}
 
 	@Override
 	public void visit(UnaryOpInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
 		addAssemblyLine(String.format("%s %s", instr.op, "%eax"));
 		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		dropLine();
 	}
 
 	@Override
@@ -72,40 +77,44 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine(instr.toString());
 		if (isMethodLabel)
 			generatePrologueStatements(currentMethod);
+		dropLine();
 	}
 
 	@Override
 	public void visit(MoveArrayInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.base) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.base) + ", %eax", instr.toString());
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if (instr.isLoad)
 			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
 		else
 			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+		dropLine();
 	}
 
 	@Override
 	public void visit(MoveFieldInstr instr) {
-		addAssemblyLine("mov "+getOperandReference(instr.base)+", %eax");
+		addAssemblyLineWithComment("mov "+getOperandReference(instr.base)+", %eax", instr.toString());
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if(instr.isLoad) {
 			addAssemblyLine(String.format("move (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
 		} else {
 			addAssemblyLine(String.format("move %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
 		}
+		dropLine();
 	}
 
 	@Override
 	public void visit(ArrayLengthInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.arr) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.arr) + ", %eax", instr.toString());
 		addAssemblyLine("mov -4(%eax), %eax)");
 		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
-		
+		dropLine();
 	}
 
 	@Override
 	public void visit(JumpInstr instr) {
 		addAssemblyLine("JMP "+instr.label);
+		dropLine();
 	}
 
 	@Override
@@ -130,10 +139,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine("JLE "+instr.label);
 			break;
 		}
+		dropLine();
 	}
 
 	@Override
 	public void visit(StaticCall instr) {
+		addAssemblyComment(instr.toString());
 		for (int i = instr.args.size() - 1; i >= 0; i--) {
 			addAssemblyLine("mov " + getOperandReference(instr.args.get(i).op) + ", %eax");
 			addAssemblyLine("push %eax");
@@ -143,12 +154,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
 		if (!instr.dst.name.equals(Registers.DUMMY_REG))
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
-		
+		dropLine();
 	}
 
 	@Override
 	public void visit(VirtualCall instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.obj) + ", %eax");
+		addAssemblyLineWithComment("mov " + getOperandReference(instr.obj) + ", %eax", instr.toString());
 		for (int i = instr.args.size() - 1; i >= 0; i--) {
 			addAssemblyLine("mov " + getOperandReference(instr.args.get(i).op) + ", %ebx");
 			addAssemblyLine("push %ebx");
@@ -160,10 +171,12 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
 		if (!instr.dst.name.equals(Registers.DUMMY_REG))
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		dropLine();
 	}
 
 	@Override
 	public void visit(LibraryCall instr) {
+		addAssemblyComment(instr.toString());
 		for (int i = instr.args.size() - 1; i >= 0; i--) {
 			addAssemblyLine("mov " + getOperandReference(instr.args.get(i)) + ", %eax");
 			addAssemblyLine("push %eax");
@@ -173,12 +186,15 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
 		if (!instr.dst.name.equals(Registers.DUMMY_REG))
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		dropLine();
 	}
 
 	@Override
 	public void visit(ReturnInstr instr) {
-		addAssemblyLine("mov " + getOperandReference(instr.dst) + ", %eax");
+		addAssemblyLineWithComment(
+				"mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
 		addAssemblyLine("ret");
+		dropLine();
 	}
 	
 	private void addAssemblyLine(String line) {

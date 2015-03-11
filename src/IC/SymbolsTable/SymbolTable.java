@@ -131,10 +131,22 @@ public class SymbolTable {
 			  return null;
 		  List<String> stackFrameVariables = new ArrayList<String>();
 		  for (SymbolEntry entry : entries.values()) 
-			  stackFrameVariables.add(entry.getGlobalId());
+			  if (entry.getKind() == IDSymbolsKinds.VARIABLE)
+				  stackFrameVariables.add(entry.getGlobalId());
 		  
 		  for (SymbolTable symbolTableChild : children.values()) 
 			  stackFrameVariables.addAll(symbolTableChild.getMethodStackFrameVariables());
+		  
+		  return stackFrameVariables;
+	  }
+	  
+	  public List<String> getMethodStackFrameParams() {
+		  if (this.tableType != SymbolTableTypes.METHOD)
+			  return null;
+		  List<String> stackFrameVariables = new ArrayList<String>();
+		  for (SymbolEntry entry : entries.values()) 
+			  if (entry.getKind() == IDSymbolsKinds.FORMAL)
+				  stackFrameVariables.add(entry.getGlobalId());
 		  
 		  return stackFrameVariables;
 	  }

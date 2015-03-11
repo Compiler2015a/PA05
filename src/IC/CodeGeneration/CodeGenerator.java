@@ -133,14 +133,30 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(StaticCall instr) {
-		// TODO Auto-generated method stub
+		for (int i = instr.args.size() - 1; i >= 0; i--) {
+			addAssemblyLine("mov " + getOperandReference(instr.args.get(i).op) + ", %eax");
+			addAssemblyLine("push %eax");
+		}
+		addAssemblyLine("call " + instr.func.name);
+		if (instr.args.size() > 0)
+			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		
 	}
 
 	@Override
 	public void visit(VirtualCall instr) {
-		// TODO Auto-generated method stub
-		
+		addAssemblyLine("mov " + getOperandReference(instr.obj) + ", %eax");
+		for (int i = instr.args.size() - 1; i >= 0; i--) {
+			addAssemblyLine("mov " + getOperandReference(instr.args.get(i).op) + ", %ebx");
+			addAssemblyLine("push %ebx");
+		}
+		addAssemblyLine("push %eax");
+		addAssemblyLine("mov (%eax), %eax");
+		addAssemblyLine("call *" + (((Immediate)instr.func).val * 4) + "(%eax)");
+		if (instr.args.size() > 0)
+			addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
+		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 	}
 
 	@Override

@@ -47,6 +47,7 @@ import IC.AST.Visitor;
 import IC.AST.While;
 import IC.SymbolsTable.IDSymbolsKinds;
 import IC.lir.Instructions.*;
+import IC.CodeGeneration.AssemblyMethod;
 
 public class TranslationVisitor implements Visitor{
 	int target;
@@ -81,7 +82,7 @@ public class TranslationVisitor implements Visitor{
 	private Map<String, List<String>> methodFullNamesMap;	
 	private IDSymbolsKinds currentMethodKind; // virtual or static
 	private Boolean isMainMethod;
-	private Map<String, List<String>> methodVariablesMap;
+	private Map<String, AssemblyMethod> methodVariablesMap;
 	
 	public TranslationVisitor() {
 		this.classLayouts = new HashMap<String,ClassLayout>();
@@ -99,7 +100,7 @@ public class TranslationVisitor implements Visitor{
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
 		this.arrs = new HashMap<String,Integer>();
 		
-		this.methodVariablesMap = new HashMap<String, List<String>>();
+		this.methodVariablesMap = new HashMap<String, AssemblyMethod>();
 	}
 
 	public void printInstructions() {
@@ -118,7 +119,7 @@ public class TranslationVisitor implements Visitor{
 	}
 	
 	
-	public Map<String, List<String>> getMethodVariablesMap() {
+	public Map<String, AssemblyMethod> getAssemblyMethods() {
 		return this.methodVariablesMap;
 	}
 
@@ -194,7 +195,8 @@ public class TranslationVisitor implements Visitor{
 		// add method label
 		currentClassName = method.getSymbolsTable().getId();
 		String methodFullName = classLayouts.get(currentClassName).getMethodString(method.getName());
-		this.methodVariablesMap.put(methodFullName, method.getSymbolsTable().findChildSymbolTable(method.getName()).getMethodStackFrameVariables());
+		
+		//this.methodVariablesMap.put(methodFullName, method.getSymbolsTable().findChildSymbolTable(method.getName()).getMethodStackFrameVariables());
 		//emit(fullMethodName+":");
 		instructions.add(new LabelInstr(labelHandler.requestStr(methodFullName)));
 

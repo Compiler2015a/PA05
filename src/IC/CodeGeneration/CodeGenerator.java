@@ -203,8 +203,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("push %eax");
 		addAssemblyLine("mov (%eax), %eax");
 		addAssemblyLine("call *" + (((Immediate)instr.func).val * 4) + "(%eax)");
-		if (instr.args.size() > 0)
-			addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
+		
+		addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
+		
 		if (!instr.dst.name.equals(Registers.DUMMY_REG))
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		dropLine();
@@ -220,6 +221,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLine("call " + instr.func.name);
 		if (instr.args.size() > 0)
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp");
+		
+	
+		
 		if (!instr.dst.name.equals(Registers.DUMMY_REG))
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		dropLine();

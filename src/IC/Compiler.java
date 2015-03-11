@@ -70,6 +70,13 @@ public class Compiler {
 			
 			TranslationVisitor trv=new TranslationVisitor();
 			trv.translate(ICRoot);
+			
+			CodeGenerator codeGenerator = new CodeGenerator(icFile.getName(), 
+					trv.getInstructionsList(), trv.getClassLayouts(), 
+					trv.getStringLiterals(), trv.getAssemblyMethods());
+			String assemblyCode = codeGenerator.generateCode();
+			System.out.println(assemblyCode);
+			
 		//	ICRoot.accept(trv);
 			//System.out.println(trv.getEmissionString());
 			

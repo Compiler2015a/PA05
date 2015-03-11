@@ -1,8 +1,10 @@
 package IC.CodeGeneration;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import IC.lir.ClassLayout;
 import IC.lir.Registers;
 import IC.lir.Instructions.*;
 
@@ -11,25 +13,58 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private final String PROLOGUE_COMMENT = "prologue";
 	private final String EPILOGUE_COMMENT = "epilogue";
 	
+	private String fileName;
 	private List<Instruction> instructionsList;
+	private Collection<ClassLayout> classLayouts;
+	private List<StringLiteral> stringLiterals;
 	private Map<String, AssemblyMethod> assemblyMethods;
 	
 	private StringBuffer assemblyStrBuffer;
 	
 	private String currentMethod;
 	
-	public CodeGenerator(List<Instruction> instructionsList, Map<String, AssemblyMethod> assemblyMethods) {
+	public CodeGenerator(String fileName, List<Instruction> instructionsList, 
+			Collection<ClassLayout> classLayouts, List<StringLiteral> stringLiterals, 
+			Map<String, AssemblyMethod> assemblyMethods) {
+		this.fileName = fileName;
 		this.instructionsList = instructionsList;
+		this.classLayouts = classLayouts;
+		this.stringLiterals = stringLiterals;
 		this.assemblyMethods = assemblyMethods;
 		this.assemblyStrBuffer = new StringBuffer("");
 		
 		this.currentMethod = null;
 	}
 	
-	public void generateCode() {
+	public String generateCode() {
+		addAssemblyLine(String.format(".title	\"%s\"", fileName));
+		dropLine();
+		
+		addAssemblyComment("global declarations");
+		addAssemblyLine(".global " + ClassLayout.MAIN_METHOD_LABEL);
+		dropLine();
+		
+		addAssemblyComment("data section");
+		addAssemblyLine(".data");
+		addAssemblyLine(".align 4");
+		dropLine();
+		for (ClassLayout cl : classLayouts) 
+			addAssemblyLine(cl.toAssemblyLineString());
+		dropLine();
+		for (StringLiteral sl : stringLiterals) {
+			addAssemblyLine(".int " + sl.value.length());
+			addAssemblyLine(String.format("%s\t.string %s", sl.var, sl.value));
+		}
+		dropLine();
+		
+		addAssemblyComment("text (code) section");
+		addAssemblyLine(".text");
+
 		for (Instruction inst : this.instructionsList) {
 			inst.accept(this);
 		}
+		
+		return assemblyStrBuffer.toString();
 	}
 	
 	@Override
@@ -51,7 +86,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	public void visit(CompareInstr instr) {
 		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
 		addAssemblyLine(String.format(
-				"%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+				"cmp %s, %s", getOperandReference(instr.src), "%eax"));
 		dropLine();
 	}
 
@@ -73,6 +108,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			currentMethod = labelName;
 			dropLine();
 			addAssemblyComment("-------------------");
+			addAssemblyLine(".align 4");
 		}
 		addAssemblyLine(instr.toString());
 		if (isMethodLabel)
@@ -216,7 +252,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private void generatePrologueStatements(String methodName) {
 		addAssemblyLineWithComment("push %ebp", PROLOGUE_COMMENT);
 		addAssemblyLine("mov %esp, %ebp");
-		addAssemblyLine("sub $" + (getCurrentAssemblyMethod().getStackFrameSize() * 4) + ", %esp");
+		addAssemblyLine("sub $" + getCurrentAssemblyMethod().getStackFrameSize() + ", %esp");
 	}
 	
 	private void generateEpilogueStatements(String methodName) {
@@ -233,7 +269,19 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	private String getOperandReference(Operand operand) {
 		if (operand instanceof Immediate)
 			return "&" + Integer.toString(((Immediate)operand).val);
-		else 
-			return Integer.toString(getCurrentAssemblyMethod().getStackOffset(operand.toString())) + "(%ebp)";
+		if (operand instanceof Memory) {
+			Memory mem = (Memory)operand;
+			if (containsLiteralVar(stringLiterals, mem.name))
+				return "$" + mem.name;
+		}
+
+		return Integer.toString(getCurrentAssemblyMethod().getStackOffset(operand.toString())) + "(%ebp)";
+	}
+	
+	private Boolean containsLiteralVar(List<StringLiteral> stringLiterals, String var) {
+		for (StringLiteral sl : stringLiterals)
+			if (sl.var.equals(var))
+				return true;
+		return false;
 	}
 }

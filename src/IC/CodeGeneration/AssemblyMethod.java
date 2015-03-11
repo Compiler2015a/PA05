@@ -18,7 +18,7 @@ public class AssemblyMethod {
 
 	public int getStackOffset(String operand) {
 		// Checking if this is a virtual register operand:
-		String virtualRegisterPattern = "t[0-9]+";
+		String virtualRegisterPattern = "R[0-9]+";
 		Pattern pattern = Pattern.compile(virtualRegisterPattern);
 		Matcher matcher = pattern.matcher(operand);
 		int offset = 0;

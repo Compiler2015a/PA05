@@ -1,6 +1,7 @@
 package IC.lir;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -103,7 +104,19 @@ public class TranslationVisitor implements Visitor{
 		
 		this.methodVariablesMap = new HashMap<String, AssemblyMethod>();
 	}
-
+	
+	public List<Instruction> getInstructionsList() {
+		return this.instructions;
+	}
+	
+	public Collection<ClassLayout> getClassLayouts() {
+		return classLayouts.values();
+	}
+	
+	public List<StringLiteral> getStringLiterals() {
+		return this.stringLiterals.toStringLiteralList();
+	}
+	
 	public void printInstructions() {
 		//print string literals
 		for(StringLiteral sl : stringLiterals.toStringLiteralList())
@@ -870,7 +883,7 @@ public class TranslationVisitor implements Visitor{
 	}
 	
 	private void incrementRegisterTarget(int value) {
-		incrementRegisterTarget(value);
+		target += value;
 		if (target > this.currentMethodRegisterCounter)
 			this.currentMethodRegisterCounter = target;
 	}

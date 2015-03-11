@@ -5,6 +5,7 @@ import java.util.List;
 
 
 public class ClassLayout {
+	public static final String MAIN_METHOD_LABEL = "_ic_main";
 	private String className;
 	private List<MethodStrc> methods;
 	private List<String> fields;
@@ -105,6 +106,18 @@ public class ClassLayout {
 		return sb.toString();
 	}
 	
+	public String toAssemblyLineString() {
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(className +":\t.long ");
+		for (int i = 0; i < methods.size(); i++) {
+			sb.append(methods.get(i).toString());
+			if(i < methods.size() - 1)
+				sb.append(",");
+		}
+		return sb.toString();
+	}
+	
 	private int findMethodIndex(List<MethodStrc> list, String methodName) {
 		int i = 0;
 		for (MethodStrc methodStrc : list) {
@@ -127,7 +140,7 @@ public class ClassLayout {
 		@Override
 		public String toString() {
 			if (methodName.equals("main"))
-				return  "_ic_main";
+				return  MAIN_METHOD_LABEL;
 			return /*"_" +*/ clsName + "_" + methodName;
 		}
 	}

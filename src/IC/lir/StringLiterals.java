@@ -3,8 +3,6 @@ package IC.lir;
 import java.util.ArrayList;
 import java.util.List;
 
-import IC.lir.Instructions.Instruction;
-import IC.lir.Instructions.LabelInstr;
 import IC.lir.Instructions.StringLiteral;
 
 public class StringLiterals {

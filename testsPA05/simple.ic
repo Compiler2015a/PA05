@@ -1,0 +1,5 @@
+class Check {
+	static void main (string[] args) { 
+		Library.print("5");
+ 	}
+}

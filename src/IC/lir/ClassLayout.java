@@ -5,7 +5,7 @@ import java.util.List;
 
 
 public class ClassLayout {
-	public static final String MAIN_METHOD_LABEL = "_ic_main";
+	public static final String MAIN_METHOD_LABEL = "__ic_main";
 	private String className;
 	private List<MethodStrc> methods;
 	private List<String> fields;

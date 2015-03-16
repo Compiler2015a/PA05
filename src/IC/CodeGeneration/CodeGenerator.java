@@ -170,10 +170,10 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	public void visit(CondJumpInstr instr) {
 		switch(instr.cond) {
 		case True:
-			addAssemblyLine("JNZ "+instr.label);
+			addAssemblyLine("JZ "+instr.label);
 			break;
 		case False:
-			addAssemblyLine("JZ "+instr.label);
+			addAssemblyLine("JNZ "+instr.label);
 			break;
 		case G:
 			addAssemblyLine("JG "+instr.label);

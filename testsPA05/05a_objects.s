@@ -11,9 +11,9 @@ _DV_A:	.long _DV_A_init,_DV_A_inc,_DV_A_print
 _DV_Check:	.long _ic_main
 
 .int 42
-str0	.string "Runtime error: Null pointer dereference!"
+str0:	.string "Runtime error: Null pointer dereference!"
 .int 2
-str1	.string ""
+str1:	.string ""
 
 # text (code) section
 .text
@@ -33,11 +33,13 @@ mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R2,R1.1
 mov $1, %ebx
-mov -8(%ebp), (%eax,%ebx,4)
+mov -8(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
 mov $1, %ebx
-mov (%eax,%ebx,4), -4(%ebp)
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -4(%ebp)
 
 mov 0(%ebp), %eax	# Return Rdummy
 ret
@@ -76,7 +78,8 @@ _end_label1:
 
 mov -8(%ebp), %eax	# MoveField R2.1,R2
 mov $1, %ebx
-mov (%eax,%ebx,4), -8(%ebp)
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
 
 mov $1, %eax	# Move 1,R3
 mov %eax, -12(%ebp)
@@ -90,11 +93,13 @@ mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R2,R1.1
 mov $1, %ebx
-mov -8(%ebp), (%eax,%ebx,4)
+mov -8(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
 mov $1, %ebx
-mov (%eax,%ebx,4), -4(%ebp)
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -4(%ebp)
 
 mov 0(%ebp), %eax	# Return Rdummy
 ret
@@ -115,7 +120,8 @@ mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
 mov $1, %ebx
-mov (%eax,%ebx,4), -4(%ebp)
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -4(%ebp)
 
 # Library __printi(R1),Rdummy
 mov -4(%ebp), %eax
@@ -155,7 +161,8 @@ mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField _DV_A,R1.0
 mov $0, %ebx
-mov $_DV_A, (%eax,%ebx,4)
+mov $_DV_A, %ecx
+mov %ecx, (%eax,%ebx,4)
 
 mov -4(%ebp), %eax	# Move R1,var1_a1
 mov %eax, -20(%ebp)
@@ -196,7 +203,8 @@ mov %eax, -8(%ebp)
 
 mov -8(%ebp), %eax	# MoveField _DV_A,R2.0
 mov $0, %ebx
-mov $_DV_A, (%eax,%ebx,4)
+mov $_DV_A, %ecx
+mov %ecx, (%eax,%ebx,4)
 
 mov -8(%ebp), %eax	# Move R2,var2_a2
 mov %eax, -24(%ebp)

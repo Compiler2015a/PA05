@@ -53,7 +53,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		dropLine();
 		for (StringLiteral sl : stringLiterals) {
 			addAssemblyLine(".int " + sl.value.length());
-			addAssemblyLine(String.format("%s\t.string %s", sl.var, sl.value));
+			addAssemblyLine(String.format("%s:\t.string %s", sl.var, sl.value));
 		}
 		dropLine();
 		
@@ -128,10 +128,13 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	public void visit(MoveArrayInstr instr) {
 		addAssemblyLineWithComment("mov " + getOperandReference(instr.base) + ", %eax", instr.toString());
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
-		if (instr.isLoad)
-			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
-		else
-			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+		if(instr.isLoad) {
+			addAssemblyLine("mov (%eax,%ebx,4), %ecx");
+			addAssemblyLine("mov %ecx, " + getOperandReference(instr.mem));
+		} else {
+			addAssemblyLine("mov " + getOperandReference(instr.mem) + ", %ecx");
+			addAssemblyLine("mov %ecx, (%eax,%ebx,4)");
+		}
 		dropLine();
 	}
 
@@ -140,9 +143,11 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		addAssemblyLineWithComment("mov "+getOperandReference(instr.base)+", %eax", instr.toString());
 		addAssemblyLine("mov " + getOperandReference(instr.offset) + ", %ebx");
 		if(instr.isLoad) {
-			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
+			addAssemblyLine("mov (%eax,%ebx,4), %ecx");
+			addAssemblyLine("mov %ecx, " + getOperandReference(instr.mem));
 		} else {
-			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+			addAssemblyLine("mov " + getOperandReference(instr.mem) + ", %ecx");
+			addAssemblyLine("mov %ecx, (%eax,%ebx,4)");
 		}
 		dropLine();
 	}

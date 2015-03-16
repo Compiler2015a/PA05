@@ -142,8 +142,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		if(instr.isLoad) {
 			addAssemblyLine(String.format("mov (%s,%s,4), %s", "%eax", "%ebx", getOperandReference(instr.mem)));
 		} else {
-			addAssemblyLine(String.format("mov"+((instr.mem instanceof Label && ((Label)instr.mem).isDVPtr)?"l":"")
-					+" %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
+			addAssemblyLine(String.format("mov %s, (%s,%s,4)", getOperandReference(instr.mem), "%eax", "%ebx"));
 		}
 		dropLine();
 	}
@@ -283,14 +282,16 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	
 	private String getOperandReference(Operand operand) {
 		if (operand instanceof Immediate)
-			return "&" + Integer.toString(((Immediate)operand).val);
+			return "$" + Integer.toString(((Immediate)operand).val);
 		if (operand instanceof Memory) {
 			Memory mem = (Memory)operand;
 			if (containsLiteralVar(stringLiterals, mem.name))
 				return "$" + mem.name;
 		}
-		if (operand instanceof Label && ((Label)operand).isDVPtr) {
-			return "$"+(Label)operand;
+		if (operand instanceof Label) {
+			Label label = (Label)operand;
+			if (label.name.startsWith("_DV"))
+				return "$" + label.name;
 		}
 
 		return Integer.toString(getCurrentAssemblyMethod().getStackOffset(operand.toString())) + "(%ebp)";

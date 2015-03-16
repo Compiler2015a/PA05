@@ -4,18 +4,12 @@ package IC.lir.Instructions;
  */
 public class Label extends Operand {
 	public final String name;
-	public boolean isDVPtr = false;
 	
 	protected static int numberOfLabels = 0;
 	
 	public Label(String name) {
 		this.name = name;
 		++numberOfLabels;
-	}
-	
-	public Label(String name, boolean isDVPtr) {
-		this(name);
-		this.isDVPtr = isDVPtr;
 	}
 	
 	/** Returns the total number of labels created so far.

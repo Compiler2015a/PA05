@@ -169,7 +169,10 @@ public class TranslationVisitor implements Visitor{
 
 				for (Method method : icClass.getMethods()) {
 					nodeHandlingQueue.add(method);
-					cl.addMethod(method.getName());
+					if (method instanceof VirtualMethod)
+						cl.addVirtualMethod(method.getName());
+					else
+						cl.addStaticMethod(method.getName());
 					String methodFullName = cl.getMethodString(method.getName());
 					this.methodFullNamesMap.put(methodFullName, generatMethodParamsList(method));
 				}

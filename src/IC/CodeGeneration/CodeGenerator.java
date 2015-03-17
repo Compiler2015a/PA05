@@ -295,6 +295,10 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			return "$" + Integer.toString(((Immediate)operand).val);
 		if (operand instanceof Memory) {
 			Memory mem = (Memory)operand;
+			
+			if (mem.name.equals("this"))
+				return Integer.toString(4) + "(%ebp)";
+			
 			if (containsLiteralVar(stringLiterals, mem.name))
 				return "$" + mem.name;
 		}

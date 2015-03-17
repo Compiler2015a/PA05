@@ -152,6 +152,18 @@ public class ClassLayout {
 		
 		return -1;
 	}
+	
+	private int findMethodIndex(List<MethodStrc> list, String methodName, String className) {
+		int i = 0;
+		for (MethodStrc methodStrc : list) {
+			if (methodStrc.methodName.equals(methodName) && methodStrc.clsName.equals(className))
+				return i;
+			i++;
+		}
+		
+		return -1;
+	}
+	
 	private class MethodStrc {
 		private String methodName;
 		private String clsName;

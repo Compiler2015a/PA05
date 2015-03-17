@@ -7,9 +7,9 @@
 .data
 .align 4
 
-_DV_D:	.long 
-_DV_A:	.long __ic_main,_DV_A_foo
+_DV_A:	.long _DV_A_foo
 _DV_C:	.long 
+_DV_D:	.long 
 
 .int 42
 str0:	.string "Runtime error: Null pointer dereference!"
@@ -57,7 +57,7 @@ mov %eax, -8(%ebp)
 mov -8(%ebp), %eax	# Compare 0,R2
 cmp $0, %eax
 
-JZ _end_label1
+JNZ _end_label1
 
 mov $str0, %eax	# Move str0,R2
 mov %eax, -8(%ebp)
@@ -88,7 +88,7 @@ mov %eax, -8(%ebp)
 mov -8(%ebp), %eax	# Compare 0,R2
 cmp $0, %eax
 
-JZ _end_label2
+JNZ _end_label2
 
 mov $str0, %eax	# Move str0,R2
 mov %eax, -8(%ebp)
@@ -106,7 +106,7 @@ _end_label2:
 mov -8(%ebp), %eax	# VirtualCall R2.1(),R2
 push %eax
 mov (%eax), %eax
-call *4(%eax)
+call *0(%eax)
 add $4, %esp
 mov %eax, -8(%ebp)
 
@@ -124,9 +124,6 @@ push %eax
 call __exit
 add $4, %esp
 
-mov %ebp, %esp	# epilogue
-pop %ebp
-ret
 
 # -------------------
 .align 4
@@ -147,7 +144,7 @@ mov $0, %ebx
 mov $_DV_C, %ecx
 mov %ecx, (%eax,%ebx,4)
 
-mov 0(%ebp), %eax	# Move this,R1
+mov 4(%ebp), %eax	# Move this,R1
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
@@ -158,7 +155,7 @@ mov %ecx, -4(%ebp)
 mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
-JZ _end_label3
+JNZ _end_label3
 
 mov $str0, %eax	# Move str0,R1
 mov %eax, -4(%ebp)
@@ -186,7 +183,7 @@ mov %ecx, -4(%ebp)
 mov $5, %eax	# Move 5,R2
 mov %eax, -8(%ebp)
 
-mov 0(%ebp), %eax	# Move this,R1
+mov 4(%ebp), %eax	# Move this,R1
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
@@ -197,7 +194,7 @@ mov %ecx, -4(%ebp)
 mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
-JZ _end_label4
+JNZ _end_label4
 
 mov $str0, %eax	# Move str0,R1
 mov %eax, -4(%ebp)
@@ -220,7 +217,7 @@ mov %ecx, -4(%ebp)
 mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
-JZ _end_label5
+JNZ _end_label5
 
 mov $str0, %eax	# Move str0,R1
 mov %eax, -4(%ebp)
@@ -245,7 +242,7 @@ mov $1, %ebx
 mov (%eax,%ebx,4), %ecx
 mov %ecx, -4(%ebp)
 
-mov 0(%ebp), %eax	# Move this,R1
+mov 4(%ebp), %eax	# Move this,R1
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# MoveField R1.1,R1
@@ -256,7 +253,7 @@ mov %ecx, -4(%ebp)
 mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
-JZ _end_label6
+JNZ _end_label6
 
 mov $str0, %eax	# Move str0,R1
 mov %eax, -4(%ebp)
@@ -279,7 +276,7 @@ mov %ecx, -4(%ebp)
 mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
-JZ _end_label7
+JNZ _end_label7
 
 mov $str0, %eax	# Move str0,R1
 mov %eax, -4(%ebp)
@@ -300,5 +297,7 @@ mov (%eax,%ebx,4), %ecx
 mov %ecx, -4(%ebp)
 
 mov -4(%ebp), %eax	# Return R1
+mov %ebp, %esp	# epilogue
+pop %ebp
 ret
 

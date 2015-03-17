@@ -7,7 +7,9 @@
 .data
 .align 4
 
-_DV_A:	.long __ic_main,_DV_A_foo
+_DV_A:	.long _DV_A_foo
+_DV_C:	.long 
+_DV_D:	.long 
 
 .int 42
 str0:	.string "Runtime error: Null pointer dereference!"
@@ -37,6 +39,18 @@ mov %ecx, (%eax,%ebx,4)
 mov -4(%ebp), %eax	# Move R1,var1_a
 mov %eax, -16(%ebp)
 
+# Library __allocateObject(8),R3
+mov $8, %eax
+push %eax
+call __allocateObject
+add $4, %esp
+mov %eax, -12(%ebp)
+
+mov -12(%ebp), %eax	# MoveField _DV_D,R3.0
+mov $0, %ebx
+mov $_DV_D, %ecx
+mov %ecx, (%eax,%ebx,4)
+
 mov -16(%ebp), %eax	# Move var1_a,R2
 mov %eax, -8(%ebp)
 
@@ -58,12 +72,267 @@ JMP _PROGRAM_END
 
 _end_label1:
 
+mov -8(%ebp), %eax	# MoveField R3,R2.1
+mov $1, %ebx
+mov -12(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+# Library __allocateObject(8),R3
+mov $8, %eax
+push %eax
+call __allocateObject
+add $4, %esp
+mov %eax, -12(%ebp)
+
+mov -12(%ebp), %eax	# MoveField _DV_C,R3.0
+mov $0, %ebx
+mov $_DV_C, %ecx
+mov %ecx, (%eax,%ebx,4)
+
+mov -16(%ebp), %eax	# Move var1_a,R2
+mov %eax, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label2
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label2:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label3
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label3:
+
+mov -8(%ebp), %eax	# MoveField R3,R2.1
+mov $1, %ebx
+mov -12(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -16(%ebp), %eax	# Move var1_a,R2
+mov %eax, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label4
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label4:
+
 mov -8(%ebp), %eax	# VirtualCall R2.1(),R2
 push %eax
 mov (%eax), %eax
-call *4(%eax)
+call *0(%eax)
 add $4, %esp
 mov %eax, -8(%ebp)
+
+# Library __printi(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __printi
+add $4, %esp
+
+mov $5, %eax	# Move 5,R3
+mov %eax, -12(%ebp)
+
+mov -16(%ebp), %eax	# Move var1_a,R2
+mov %eax, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label5
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label5:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label6
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label6:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label7
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label7:
+
+mov -8(%ebp), %eax	# MoveField R3,R2.1
+mov $1, %ebx
+mov -12(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -16(%ebp), %eax	# Move var1_a,R2
+mov %eax, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label8
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label8:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label9
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label9:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
+
+mov -8(%ebp), %eax	# Compare 0,R2
+cmp $0, %eax
+
+JNZ _end_label10
+
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label10:
+
+mov -8(%ebp), %eax	# MoveField R2.1,R2
+mov $1, %ebx
+mov (%eax,%ebx,4), %ecx
+mov %ecx, -8(%ebp)
 
 # Library __printi(R2),Rdummy
 mov -8(%ebp), %eax
@@ -79,9 +348,6 @@ push %eax
 call __exit
 add $4, %esp
 
-mov %ebp, %esp	# epilogue
-pop %ebp
-ret
 
 # -------------------
 .align 4
@@ -90,9 +356,11 @@ push %ebp	# prologue
 mov %esp, %ebp
 sub $0, %esp
 
-mov $5, %eax	# Move 5,R1
+mov $6, %eax	# Move 6,R1
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# Return R1
+mov %ebp, %esp	# epilogue
+pop %ebp
 ret
 

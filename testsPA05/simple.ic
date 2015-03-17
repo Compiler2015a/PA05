@@ -3,10 +3,23 @@ class A {
 	int x;
 	static void main(string[] args) { 
 		A a = new A();
+		a.d = new D();
+		a.d.c = new C();
 		Library.printi(a.foo());
+		a.d.c.x=5;
+		Library.printi(a.d.c.x);
 	}
 	
 	int foo() {
-		return 5;
+		//d.c = new C();
+		return 6;
 	}
+}
+
+class C {
+	int x;
+}
+
+class D {
+	C c;
 }

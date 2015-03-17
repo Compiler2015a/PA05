@@ -111,8 +111,6 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		String labelName = instr.label.name;
 		boolean isMethodLabel = (assemblyMethods.keySet().contains(labelName));
 		if (isMethodLabel) {
-			if (currentMethod != null) 
-				generateEpilogueStatements(currentMethod);
 			currentMethod = labelName;
 			dropLine();
 			addAssemblyComment("-------------------");
@@ -215,7 +213,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		}
 		addAssemblyLine("push %eax");
 		addAssemblyLine("mov (%eax), %eax");
-		addAssemblyLine("call *" + (((Immediate)instr.func).val * 4) + "(%eax)");
+		addAssemblyLine("call *" + ((((Immediate)instr.func).val - 1) * 4) + "(%eax)");
 		
 		addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
 		
@@ -246,9 +244,16 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 
 	@Override
 	public void visit(ReturnInstr instr) {
-		addAssemblyLineWithComment(
-				"mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
-		addAssemblyLine("ret");
+		boolean isDummyReg = false;
+		if (instr.dst instanceof Reg) {
+			Reg reg = (Reg)instr.dst;
+			if (reg.name.equals(Registers.DUMMY_REG))
+				isDummyReg = true;
+		}
+		if (!isDummyReg)
+			addAssemblyLineWithComment(
+					"mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
+		generateEpilogueStatements(currentMethod);
 		dropLine();
 	}
 	

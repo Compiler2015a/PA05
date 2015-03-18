@@ -52,7 +52,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine(cl.toAssemblyLineString());
 		dropLine();
 		for (StringLiteral sl : stringLiterals) {
-			addAssemblyLine(".int " + sl.value.length());
+			addAssemblyLine(".int " + (sl.value.length() - 2));
 			addAssemblyLine(String.format("%s:\t.string %s", sl.var, sl.value));
 		}
 		dropLine();
@@ -77,15 +77,29 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(BinOpInstr instr) {
 		addAssemblyLineWithComment("mov " + getOperandReference(instr.dst) + ", %eax", instr.toString());
-		if ((instr.op != Operator.DIV) && (instr.op != Operator.MOD)) {
-			addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
-			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
-		}
-		else {
-			addAssemblyLine("mov " + getOperandReference(instr.src) + ", %ebx");
-			addAssemblyLine("div %ebx");
-			String resultRegister = (instr.op == Operator.DIV) ? "%eax" : "%edx";
-			addAssemblyLine("mov " + resultRegister + ", " + getOperandReference(instr.dst));
+		switch (instr.op) {
+			case MUL:
+				addAssemblyLine("mov " + getOperandReference(instr.src) + ", %ebx");
+				addAssemblyLine("mul %ebx");
+				addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+				break;
+			case DIV:
+				addAssemblyLine("mov " + getOperandReference(instr.src) + ", %ebx");
+				addAssemblyLine("mov $0, %edx");
+				addAssemblyLine("div %ebx");
+				addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+				break;
+			case MOD:
+				addAssemblyLine("mov " + getOperandReference(instr.src) + ", %ebx");
+				addAssemblyLine("mov $0, %edx");
+				addAssemblyLine("div %ebx");
+				addAssemblyLine("mov %edx, " + getOperandReference(instr.dst));
+				break;
+			default:
+				addAssemblyLine(String.format("%s %s, %s", instr.op, getOperandReference(instr.src), "%eax"));
+				addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+				break;
+					
 		}
 		dropLine();
 	}
@@ -153,7 +167,10 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(ArrayLengthInstr instr) {
 		addAssemblyLineWithComment("mov " + getOperandReference(instr.arr) + ", %eax", instr.toString());
-		addAssemblyLine("mov -4(%eax), %eax)");
+		addAssemblyLine("mov -4(%eax), %eax");
+		addAssemblyLine("mov $4, %ebx");
+		addAssemblyLine("mov $0, %edx");
+		addAssemblyLine("div %ebx");
 		addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
 		dropLine();
 	}
@@ -225,19 +242,46 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	@Override
 	public void visit(LibraryCall instr) {
 		addAssemblyComment(instr.toString());
+		
+		if (instr.func.name.equals("__atos")) {
+			addAssemblyLineWithComment("mov " + getOperandReference(instr.args.get(0)) + ","
+					+ " %ebx", "fixing atos input's length before the call");
+			addAssemblyLine("mov -4(%ebx), %eax");
+			addAssemblyLine("mov $4, %ecx");
+			addAssemblyLine("mov $0, %edx");
+			addAssemblyLine("div %ecx");
+			addAssemblyLine("mov %eax, -4(%ebx)");
+			addAssemblyLine("push %ebx");
+		}
+		
 		for (int i = instr.args.size() - 1; i >= 0; i--) { //pushing parameters in reverse order
 			addAssemblyLine("mov " + getOperandReference(instr.args.get(i)) + ", %eax");
 			addAssemblyLine("push %eax");
 		}
-		
+				
 		addAssemblyLine("call " + instr.func.name); //calling the function
 		if (instr.args.size() > 0)
 			addAssemblyLine("add $" + Integer.toString(instr.args.size() * 4) + ", %esp"); //cutting back the stack
 		
-	
 		
 		if (!instr.dst.name.equals(Registers.DUMMY_REG)) //move result into destination register
 			addAssemblyLine("mov %eax, " + getOperandReference(instr.dst));
+		
+		if (instr.func.name.equals("__atos")) {
+			addAssemblyLineWithComment("pop %ebx", "fixing atos input's length back");
+			addAssemblyLine("mov -4(%ebx), %eax");
+			addAssemblyLine("mov $4, %ecx");
+			addAssemblyLine("mul %ecx");
+			addAssemblyLine("mov %eax, -4(%ebx)");
+		}
+		
+		if (instr.func.name.equals("__stoa")) {
+			addAssemblyLineWithComment("mov %eax, %ebx", "fixing stoa output length to be artificially multiblied by 4");
+			addAssemblyLine("mov -4(%ebx), %eax");
+			addAssemblyLine("mov $4, %ecx");
+			addAssemblyLine("mul %ecx");
+			addAssemblyLine("mov %eax, -4(%ebx)");
+		}
 		
 		dropLine();
 	}

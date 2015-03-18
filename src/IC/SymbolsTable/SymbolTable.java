@@ -144,7 +144,7 @@ public class SymbolTable {
 		  if (this.tableType != SymbolTableTypes.METHOD)
 			  return null;
 		  List<String> stackFrameVariables = new ArrayList<String>();
-		  for (SymbolEntry entry : entries.values()) 
+		  for (SymbolEntry entry : sorted_entries) 
 			  if (entry.getKind() == IDSymbolsKinds.FORMAL)
 				  stackFrameVariables.add(entry.getGlobalId());
 		  

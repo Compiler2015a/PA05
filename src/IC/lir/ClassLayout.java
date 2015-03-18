@@ -19,6 +19,7 @@ public class ClassLayout {
 		this.fields = new ArrayList<String>();
 		if (superClassLayout != null) {
 			this.allMethods.addAll(superClassLayout.allMethods);
+			this.virtualMethods.addAll(superClassLayout.virtualMethods);
 			this.fields.addAll(superClassLayout.fields);
 		}
 	}

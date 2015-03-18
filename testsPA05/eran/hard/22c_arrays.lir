@@ -1,0 +1,45 @@
+str0: "Runtime error: Array allocation with negative array size!"
+str1: "Runtime error: Null pointer dereference!"
+str2: "Runtime error: Array index out of bounds!"
+str3: "Should not print this or get here."
+_DV_MainClass: []
+_ic_main:
+Move 5,R2
+Mul 4,R2
+Compare 0,R2
+JumpGE _end_label1
+Move str0,R1
+Library __print(R1),Rdummy
+Jump _PROGRAM_END
+_end_label1:
+Library __allocateArray(R2),R1
+Move R1,var1_arr
+Move var1_arr,R5
+Move 2,R6
+Move 0,R6
+Sub R6,R5
+Compare 0,R6
+JumpFalse _end_label2
+Move str1,R5
+Library __print(R5),Rdummy
+Jump _PROGRAM_END
+_end_label2:
+ArrayLength R6,R7
+Compare R5,R7
+JumpG _end_label3
+Move str2,R7
+Library __print(R7),Rdummy
+Jump _PROGRAM_END
+_end_label3:
+Compare 0,R5
+JumpGE _end_label4
+Move str0,R5
+Library __print(R5),Rdummy
+Jump _PROGRAM_END
+_end_label4:
+MoveArray R6[R5],R2
+Move R2,var2_i
+Move str3,R3
+Library __println(R3),Rdummy
+_PROGRAM_END:
+Library __exit(0),Rdummy

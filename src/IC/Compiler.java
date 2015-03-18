@@ -85,7 +85,7 @@ public class Compiler {
 					trv.getInstructionsList(), trv.getClassLayouts(), 
 					trv.getStringLiterals(), trv.getAssemblyMethods());
 			String assemblyCode = codeGenerator.generateCode();
-			System.out.println(assemblyCode);
+		//	System.out.println(assemblyCode);
 			
 		//	ICRoot.accept(trv);
 			//System.out.println(trv.getEmissionString());

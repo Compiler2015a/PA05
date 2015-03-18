@@ -230,8 +230,9 @@ public class TranslationVisitor implements Visitor{
 				method.getName()).getMethodStackFrameParams();
 		List<String> assemblyMethodVariables = method.getSymbolsTable().findChildSymbolTable(
 				method.getName()).getMethodStackFrameVariables();
+		boolean isVirtual = (method instanceof VirtualMethod); 
 		this.methodVariablesMap.put(methodFullName, new AssemblyMethod(
-				assemblyMethodParams, assemblyMethodVariables, currentMethodRegisterCounter));
+				assemblyMethodParams, assemblyMethodVariables, currentMethodRegisterCounter, isVirtual));
 		
 		if (isMainMethod) {
 			instructions.add(new LabelInstr(labelHandler.requestStr("_PROGRAM_END")));

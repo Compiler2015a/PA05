@@ -213,7 +213,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		}
 		addAssemblyLine("push %eax");
 		addAssemblyLine("mov (%eax), %eax");
-		addAssemblyLine("call *" + ((((Immediate)instr.func).val - 1) * 4) + "(%eax)");
+		addAssemblyLine("call *" + ((((Immediate)instr.func).val) * 4) + "(%eax)");
 		
 		addAssemblyLine("add $" + Integer.toString((instr.args.size() + 1) * 4) + ", %esp");
 		
@@ -297,7 +297,7 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			Memory mem = (Memory)operand;
 			
 			if (mem.name.equals("this"))
-				return Integer.toString(4) + "(%ebp)";
+				return Integer.toString(8) + "(%ebp)";
 			
 			if (containsLiteralVar(stringLiterals, mem.name))
 				return "$" + mem.name;

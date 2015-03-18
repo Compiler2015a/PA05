@@ -9,11 +9,13 @@ public class AssemblyMethod {
 	private List<String> localVariables;
 	private List<String> params;
 	private int usedRegistersCount;
+	private boolean isVirtual;
 	
-	public AssemblyMethod(List<String> params, List<String> localVariables, int usedRegistersCount) {
+	public AssemblyMethod(List<String> params, List<String> localVariables, int usedRegistersCount, boolean isVirtual) {
 		this.params = params;
 		this.localVariables = localVariables;
 		this.usedRegistersCount = usedRegistersCount;
+		this.isVirtual = isVirtual;
 	}
 
 	public int getStackOffset(String operand) {
@@ -26,8 +28,9 @@ public class AssemblyMethod {
 			int virtualRegNum = Integer.parseInt(operand.substring(1));	
 			offset = -4 * virtualRegNum;
 		}
+		int isVirtual = this.isVirtual ? 1 : 0;
 		if (params.contains(operand))
-			offset = 8 + params.indexOf(operand) * 4;
+			offset = 8 + (isVirtual * 4) + params.indexOf(operand) * 4;
 		if (localVariables.contains(operand))
 			offset = -4 * (usedRegistersCount + localVariables.indexOf(operand) + 1);
 		return offset;

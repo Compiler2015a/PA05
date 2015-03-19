@@ -36,6 +36,10 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 		this.currentMethod = null;
 	}
 	
+	/**
+	 * 
+	 * @return a complete assembly code in string
+	 */
 	public String generateCode() {
 		addAssemblyLine(String.format(".title	\"%s\"", fileName));
 		dropLine();
@@ -243,6 +247,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 	public void visit(LibraryCall instr) {
 		addAssemblyComment(instr.toString());
 		
+		// because the length byte was multiplied by 4 when the input was created 
+		// through the library function stoa, before calling the atos it needs to 
+		// be restored back to it's original value.
 		if (instr.func.name.equals("__atos")) {
 			addAssemblyLineWithComment("mov " + getOperandReference(instr.args.get(0)) + ","
 					+ " %ebx", "fixing atos input's length before the call");
@@ -275,6 +282,9 @@ public class CodeGenerator implements IC.lir.Instructions.Visitor {
 			addAssemblyLine("mov %eax, -4(%ebx)");
 		}
 		
+		// Setting the length of the array memory byte to be multiplied by 4 to keep consistency 
+		// with the length function which always assumes the array is of integers 
+		// (and not chars like in this special case) and therefore divides the length by 4.
 		if (instr.func.name.equals("__stoa")) {
 			addAssemblyLineWithComment("mov %eax, %ebx", "fixing stoa output length to be artificially multiblied by 4");
 			addAssemblyLine("mov -4(%ebx), %eax");

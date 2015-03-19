@@ -27,13 +27,13 @@ str3:	.string "Should not print this or get here."
 __ic_main:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $16, %esp
+sub $12, %esp
 
 mov $0, %eax	# Move 0,R1
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# Move R1,var1_a
-mov %eax, -16(%ebp)
+mov %eax, -12(%ebp)
 
 mov $str0, %eax	# Move str0,R2
 mov %eax, -8(%ebp)
@@ -44,7 +44,7 @@ push %eax
 call __println
 add $4, %esp
 
-mov -16(%ebp), %eax	# Move var1_a,R2
+mov -12(%ebp), %eax	# Move var1_a,R2
 mov %eax, -8(%ebp)
 
 mov -8(%ebp), %eax	# Compare 0,R2

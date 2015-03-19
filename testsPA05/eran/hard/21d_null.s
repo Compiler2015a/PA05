@@ -65,11 +65,11 @@ JMP _PROGRAM_END
 
 _end_label1:
 
-mov $2, %eax	# Move 2,R3
-mov %eax, -12(%ebp)
+mov $2, %eax	# Move 2,R4
+mov %eax, -16(%ebp)
 
-mov -8(%ebp), %eax	# VirtualCall R2.0(param1_a=R3),R2
-mov -12(%ebp), %ebx
+mov -8(%ebp), %eax	# VirtualCall R2.0(param1_a=R4),R2
+mov -16(%ebp), %ebx
 push %ebx
 push %eax
 mov (%eax), %eax

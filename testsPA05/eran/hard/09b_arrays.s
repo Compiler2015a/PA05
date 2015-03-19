@@ -33,49 +33,49 @@ str6:	.string " ]"
 __ic_main:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $28, %esp
+sub $24, %esp
 
-mov $14, %eax	# Move 14,R1
-mov %eax, -4(%ebp)
+mov $14, %eax	# Move 14,R4
+mov %eax, -16(%ebp)
 
-mov $2, %eax	# Move 2,R2
-mov %eax, -8(%ebp)
+mov $2, %eax	# Move 2,R5
+mov %eax, -20(%ebp)
 
-# StaticCall _DV_Arrays_buildArr(param1_size=R1, param2_val=R2),R1
-mov -8(%ebp), %eax
+# StaticCall _DV_Arrays_buildArr(param1_size=R4, param2_val=R5),R3
+mov -20(%ebp), %eax
 push %eax
-mov -4(%ebp), %eax
+mov -16(%ebp), %eax
 push %eax
 call _DV_Arrays_buildArr
 add $8, %esp
-mov %eax, -4(%ebp)
-
-mov $14, %eax	# Move 14,R2
-mov %eax, -8(%ebp)
-
-mov $3, %eax	# Move 3,R3
 mov %eax, -12(%ebp)
 
-# StaticCall _DV_Arrays_buildArr(param1_size=R2, param2_val=R3),R2
-mov -12(%ebp), %eax
+mov $14, %eax	# Move 14,R5
+mov %eax, -20(%ebp)
+
+mov $3, %eax	# Move 3,R6
+mov %eax, -24(%ebp)
+
+# StaticCall _DV_Arrays_buildArr(param1_size=R5, param2_val=R6),R4
+mov -24(%ebp), %eax
 push %eax
-mov -8(%ebp), %eax
+mov -20(%ebp), %eax
 push %eax
 call _DV_Arrays_buildArr
 add $8, %esp
-mov %eax, -8(%ebp)
+mov %eax, -16(%ebp)
 
-# StaticCall _DV_Arrays_sumArr(param1_a=R1, param2_b=R2),R1
-mov -8(%ebp), %eax
+# StaticCall _DV_Arrays_sumArr(param1_a=R3, param2_b=R4),R2
+mov -16(%ebp), %eax
 push %eax
-mov -4(%ebp), %eax
+mov -12(%ebp), %eax
 push %eax
 call _DV_Arrays_sumArr
 add $8, %esp
-mov %eax, -4(%ebp)
+mov %eax, -8(%ebp)
 
-# StaticCall _DV_Arrays_printArr(param1_a=R1),Rdummy
-mov -4(%ebp), %eax
+# StaticCall _DV_Arrays_printArr(param1_a=R2),Rdummy
+mov -8(%ebp), %eax
 push %eax
 call _DV_Arrays_printArr
 add $4, %esp
@@ -86,14 +86,14 @@ mov %eax, -16(%ebp)
 mov $2, %eax	# Move 2,R5
 mov %eax, -20(%ebp)
 
-# StaticCall _DV_Arrays_buildArr(param1_size=R4, param2_val=R5),R4
+# StaticCall _DV_Arrays_buildArr(param1_size=R4, param2_val=R5),R3
 mov -20(%ebp), %eax
 push %eax
 mov -16(%ebp), %eax
 push %eax
 call _DV_Arrays_buildArr
 add $8, %esp
-mov %eax, -16(%ebp)
+mov %eax, -12(%ebp)
 
 mov $14, %eax	# Move 14,R5
 mov %eax, -20(%ebp)
@@ -101,28 +101,28 @@ mov %eax, -20(%ebp)
 mov $3, %eax	# Move 3,R6
 mov %eax, -24(%ebp)
 
-# StaticCall _DV_Arrays_buildArr(param1_size=R5, param2_val=R6),R5
+# StaticCall _DV_Arrays_buildArr(param1_size=R5, param2_val=R6),R4
 mov -24(%ebp), %eax
 push %eax
 mov -20(%ebp), %eax
 push %eax
 call _DV_Arrays_buildArr
 add $8, %esp
-mov %eax, -20(%ebp)
+mov %eax, -16(%ebp)
 
-# StaticCall _DV_Arrays_sumArr(param1_a=R4, param2_b=R5),R4
-mov -20(%ebp), %eax
-push %eax
+# StaticCall _DV_Arrays_sumArr(param1_a=R3, param2_b=R4),R2
 mov -16(%ebp), %eax
+push %eax
+mov -12(%ebp), %eax
 push %eax
 call _DV_Arrays_sumArr
 add $8, %esp
-mov %eax, -16(%ebp)
+mov %eax, -8(%ebp)
 
 mov $2, %eax	# Move 2,R3
 mov %eax, -12(%ebp)
 
-mov -16(%ebp), %eax	# Compare 0,R4
+mov -8(%ebp), %eax	# Compare 0,R2
 cmp $0, %eax
 
 JNZ _end_label1
@@ -140,7 +140,7 @@ JMP _PROGRAM_END
 
 _end_label1:
 
-mov -16(%ebp), %eax	# ArrayLength R4,R5
+mov -8(%ebp), %eax	# ArrayLength R2,R5
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
@@ -183,22 +183,22 @@ JMP _PROGRAM_END
 
 _end_label3:
 
-mov -16(%ebp), %eax	# MoveArray R4[R3],R1
+mov -8(%ebp), %eax	# MoveArray R2[R3],R4
 mov -12(%ebp), %ebx
 mov (%eax,%ebx,4), %ecx
-mov %ecx, -4(%ebp)
+mov %ecx, -16(%ebp)
 
-# Library __printi(R1),Rdummy
-mov -4(%ebp), %eax
+# Library __printi(R4),Rdummy
+mov -16(%ebp), %eax
 push %eax
 call __printi
 add $4, %esp
 
-mov $str3, %eax	# Move str3,R1
-mov %eax, -4(%ebp)
+mov $str3, %eax	# Move str3,R2
+mov %eax, -8(%ebp)
 
-# Library __println(R1),Rdummy
-mov -4(%ebp), %eax
+# Library __println(R2),Rdummy
+mov -8(%ebp), %eax
 push %eax
 call __println
 add $4, %esp
@@ -217,17 +217,17 @@ add $4, %esp
 _DV_Arrays_buildArr:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $36, %esp
+sub $32, %esp
 
-mov 8(%ebp), %eax	# Move param1_size,R2
-mov %eax, -8(%ebp)
+mov 8(%ebp), %eax	# Move param1_size,R1
+mov %eax, -4(%ebp)
 
-mov -8(%ebp), %eax	# Mul 4,R2
+mov -4(%ebp), %eax	# Mul 4,R1
 mov $4, %ebx
 mul %ebx
-mov %eax, -8(%ebp)
+mov %eax, -4(%ebp)
 
-mov -8(%ebp), %eax	# Compare 0,R2
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JGE _end_label4
@@ -245,37 +245,37 @@ JMP _PROGRAM_END
 
 _end_label4:
 
-# Library __allocateArray(R2),R1
-mov -8(%ebp), %eax
+# Library __allocateArray(R1),R1
+mov -4(%ebp), %eax
 push %eax
 call __allocateArray
 add $4, %esp
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# Move R1,var1_a
+mov %eax, -28(%ebp)
+
+mov $0, %eax	# Move 0,R1
+mov %eax, -4(%ebp)
+
+mov -4(%ebp), %eax	# Move R1,var2_i
 mov %eax, -32(%ebp)
-
-mov $0, %eax	# Move 0,R2
-mov %eax, -8(%ebp)
-
-mov -8(%ebp), %eax	# Move R2,var2_i
-mov %eax, -36(%ebp)
 
 _test_label5:
 
-mov -32(%ebp), %eax	# Move var1_a,R4
-mov %eax, -16(%ebp)
+mov -28(%ebp), %eax	# Move var1_a,R1
+mov %eax, -4(%ebp)
 
-mov -16(%ebp), %eax	# Compare 0,R4
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JNZ _end_label7
 
-mov $str0, %eax	# Move str0,R3
-mov %eax, -12(%ebp)
+mov $str0, %eax	# Move str0,R1
+mov %eax, -4(%ebp)
 
-# Library __print(R3),Rdummy
-mov -12(%ebp), %eax
+# Library __print(R1),Rdummy
+mov -4(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -284,57 +284,57 @@ JMP _PROGRAM_END
 
 _end_label7:
 
-mov -16(%ebp), %eax	# ArrayLength R4,R3
+mov -4(%ebp), %eax	# ArrayLength R1,R1
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
-mov %eax, -12(%ebp)
+mov %eax, -4(%ebp)
 
-mov -36(%ebp), %eax	# Move var2_i,R4
-mov %eax, -16(%ebp)
+mov -32(%ebp), %eax	# Move var2_i,R2
+mov %eax, -8(%ebp)
 
-mov -16(%ebp), %eax	# Compare R3,R4
-cmp -12(%ebp), %eax
+mov -8(%ebp), %eax	# Compare R1,R2
+cmp -4(%ebp), %eax
 
 JL _true_label6
 
-mov $0, %eax	# Move 0,R3
-mov %eax, -12(%ebp)
+mov $0, %eax	# Move 0,R1
+mov %eax, -4(%ebp)
 
 JMP _end_label6
 
 _true_label6:
 
-mov $1, %eax	# Move 1,R3
-mov %eax, -12(%ebp)
+mov $1, %eax	# Move 1,R1
+mov %eax, -4(%ebp)
 
 _end_label6:
 
-mov -12(%ebp), %eax	# Compare 1,R3
+mov -4(%ebp), %eax	# Compare 1,R1
 cmp $1, %eax
 
 JNZ _end_label5
 
-mov 12(%ebp), %eax	# Move param2_val,R4
+mov 12(%ebp), %eax	# Move param2_val,R2
+mov %eax, -8(%ebp)
+
+mov -28(%ebp), %eax	# Move var1_a,R3
+mov %eax, -12(%ebp)
+
+mov -32(%ebp), %eax	# Move var2_i,R4
 mov %eax, -16(%ebp)
 
-mov -32(%ebp), %eax	# Move var1_a,R6
-mov %eax, -24(%ebp)
-
-mov -36(%ebp), %eax	# Move var2_i,R5
-mov %eax, -20(%ebp)
-
-mov -24(%ebp), %eax	# Compare 0,R6
+mov -12(%ebp), %eax	# Compare 0,R3
 cmp $0, %eax
 
 JNZ _end_label8
 
-mov $str0, %eax	# Move str0,R5
-mov %eax, -20(%ebp)
+mov $str0, %eax	# Move str0,R4
+mov %eax, -16(%ebp)
 
-# Library __print(R5),Rdummy
-mov -20(%ebp), %eax
+# Library __print(R4),Rdummy
+mov -16(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -343,23 +343,23 @@ JMP _PROGRAM_END
 
 _end_label8:
 
-mov -24(%ebp), %eax	# ArrayLength R6,R7
+mov -12(%ebp), %eax	# ArrayLength R3,R6
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
-mov %eax, -28(%ebp)
+mov %eax, -24(%ebp)
 
-mov -28(%ebp), %eax	# Compare R5,R7
-cmp -20(%ebp), %eax
+mov -24(%ebp), %eax	# Compare R4,R6
+cmp -16(%ebp), %eax
 
 JG _end_label9
 
-mov $str1, %eax	# Move str1,R7
-mov %eax, -28(%ebp)
+mov $str1, %eax	# Move str1,R6
+mov %eax, -24(%ebp)
 
-# Library __print(R7),Rdummy
-mov -28(%ebp), %eax
+# Library __print(R6),Rdummy
+mov -24(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -368,16 +368,16 @@ JMP _PROGRAM_END
 
 _end_label9:
 
-mov -20(%ebp), %eax	# Compare 0,R5
+mov -16(%ebp), %eax	# Compare 0,R4
 cmp $0, %eax
 
 JGE _end_label10
 
-mov $str2, %eax	# Move str2,R5
-mov %eax, -20(%ebp)
+mov $str2, %eax	# Move str2,R4
+mov %eax, -16(%ebp)
 
-# Library __print(R5),Rdummy
-mov -20(%ebp), %eax
+# Library __print(R4),Rdummy
+mov -16(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -386,40 +386,32 @@ JMP _PROGRAM_END
 
 _end_label10:
 
-mov -24(%ebp), %eax	# MoveArray R4,R6[R5]
-mov -20(%ebp), %ebx
-mov -16(%ebp), %ecx
+mov -12(%ebp), %eax	# MoveArray R2,R3[R4]
+mov -16(%ebp), %ebx
+mov -8(%ebp), %ecx
 mov %ecx, (%eax,%ebx,4)
 
-mov -24(%ebp), %eax	# MoveArray R6[R5],R3
-mov -20(%ebp), %ebx
-mov (%eax,%ebx,4), %ecx
-mov %ecx, -12(%ebp)
-
-mov -36(%ebp), %eax	# Move var2_i,R4
-mov %eax, -16(%ebp)
-
-mov $1, %eax	# Move 1,R5
+mov -32(%ebp), %eax	# Move var2_i,R5
 mov %eax, -20(%ebp)
 
-mov -16(%ebp), %eax	# Add R5,R4
-Add -20(%ebp), %eax
-mov %eax, -16(%ebp)
+mov $1, %eax	# Move 1,R6
+mov %eax, -24(%ebp)
 
-mov -16(%ebp), %eax	# Move R4,var2_i
-mov %eax, -36(%ebp)
+mov -20(%ebp), %eax	# Add R6,R5
+Add -24(%ebp), %eax
+mov %eax, -20(%ebp)
 
-mov -36(%ebp), %eax	# Move var2_i,R3
-mov %eax, -12(%ebp)
+mov -20(%ebp), %eax	# Move R5,var2_i
+mov %eax, -32(%ebp)
 
 JMP _test_label5
 
 _end_label5:
 
-mov -32(%ebp), %eax	# Move var1_a,R3
-mov %eax, -12(%ebp)
+mov -28(%ebp), %eax	# Move var1_a,R1
+mov %eax, -4(%ebp)
 
-mov -12(%ebp), %eax	# Return R3
+mov -4(%ebp), %eax	# Return R1
 mov %ebp, %esp	# epilogue
 pop %ebp
 ret
@@ -430,12 +422,12 @@ ret
 _DV_Arrays_sumArr:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $52, %esp
+sub $44, %esp
 
-mov 8(%ebp), %eax	# Move param1_a,R2
-mov %eax, -8(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R1
+mov %eax, -4(%ebp)
 
-mov -8(%ebp), %eax	# Compare 0,R2
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JNZ _end_label11
@@ -453,7 +445,7 @@ JMP _PROGRAM_END
 
 _end_label11:
 
-mov -8(%ebp), %eax	# ArrayLength R2,R1
+mov -4(%ebp), %eax	# ArrayLength R1,R1
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
@@ -461,26 +453,26 @@ div %ebx
 mov %eax, -4(%ebp)
 
 mov -4(%ebp), %eax	# Move R1,var1_size
-mov %eax, -44(%ebp)
+mov %eax, -36(%ebp)
 
-mov -44(%ebp), %eax	# Move var1_size,R3
-mov %eax, -12(%ebp)
+mov -36(%ebp), %eax	# Move var1_size,R1
+mov %eax, -4(%ebp)
 
-mov -12(%ebp), %eax	# Mul 4,R3
+mov -4(%ebp), %eax	# Mul 4,R1
 mov $4, %ebx
 mul %ebx
-mov %eax, -12(%ebp)
+mov %eax, -4(%ebp)
 
-mov -12(%ebp), %eax	# Compare 0,R3
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JGE _end_label12
 
-mov $str2, %eax	# Move str2,R2
-mov %eax, -8(%ebp)
+mov $str2, %eax	# Move str2,R1
+mov %eax, -4(%ebp)
 
-# Library __print(R2),Rdummy
-mov -8(%ebp), %eax
+# Library __print(R1),Rdummy
+mov -4(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -489,37 +481,37 @@ JMP _PROGRAM_END
 
 _end_label12:
 
-# Library __allocateArray(R3),R2
-mov -12(%ebp), %eax
+# Library __allocateArray(R1),R1
+mov -4(%ebp), %eax
 push %eax
 call __allocateArray
 add $4, %esp
-mov %eax, -8(%ebp)
+mov %eax, -4(%ebp)
 
-mov -8(%ebp), %eax	# Move R2,var2_sum
-mov %eax, -52(%ebp)
+mov -4(%ebp), %eax	# Move R1,var2_sum
+mov %eax, -44(%ebp)
 
-mov $0, %eax	# Move 0,R3
-mov %eax, -12(%ebp)
+mov $0, %eax	# Move 0,R1
+mov %eax, -4(%ebp)
 
-mov -12(%ebp), %eax	# Move R3,var3_i
-mov %eax, -48(%ebp)
+mov -4(%ebp), %eax	# Move R1,var3_i
+mov %eax, -40(%ebp)
 
 _test_label13:
 
-mov 8(%ebp), %eax	# Move param1_a,R5
-mov %eax, -20(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R1
+mov %eax, -4(%ebp)
 
-mov -20(%ebp), %eax	# Compare 0,R5
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JNZ _end_label15
 
-mov $str0, %eax	# Move str0,R4
-mov %eax, -16(%ebp)
+mov $str0, %eax	# Move str0,R1
+mov %eax, -4(%ebp)
 
-# Library __print(R4),Rdummy
-mov -16(%ebp), %eax
+# Library __print(R1),Rdummy
+mov -4(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -528,54 +520,54 @@ JMP _PROGRAM_END
 
 _end_label15:
 
-mov -20(%ebp), %eax	# ArrayLength R5,R4
+mov -4(%ebp), %eax	# ArrayLength R1,R1
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
-mov %eax, -16(%ebp)
+mov %eax, -4(%ebp)
 
-mov -48(%ebp), %eax	# Move var3_i,R5
-mov %eax, -20(%ebp)
+mov -40(%ebp), %eax	# Move var3_i,R2
+mov %eax, -8(%ebp)
 
-mov -20(%ebp), %eax	# Compare R4,R5
-cmp -16(%ebp), %eax
+mov -8(%ebp), %eax	# Compare R1,R2
+cmp -4(%ebp), %eax
 
 JL _true_label14
 
-mov $0, %eax	# Move 0,R4
-mov %eax, -16(%ebp)
+mov $0, %eax	# Move 0,R1
+mov %eax, -4(%ebp)
 
 JMP _end_label14
 
 _true_label14:
 
-mov $1, %eax	# Move 1,R4
-mov %eax, -16(%ebp)
+mov $1, %eax	# Move 1,R1
+mov %eax, -4(%ebp)
 
 _end_label14:
 
-mov -16(%ebp), %eax	# Compare 1,R4
+mov -4(%ebp), %eax	# Compare 1,R1
 cmp $1, %eax
 
 JNZ _end_label13
 
-mov 8(%ebp), %eax	# Move param1_a,R8
-mov %eax, -32(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R2
+mov %eax, -8(%ebp)
 
-mov -48(%ebp), %eax	# Move var3_i,R7
-mov %eax, -28(%ebp)
+mov -40(%ebp), %eax	# Move var3_i,R3
+mov %eax, -12(%ebp)
 
-mov -32(%ebp), %eax	# Compare 0,R8
+mov -8(%ebp), %eax	# Compare 0,R2
 cmp $0, %eax
 
 JNZ _end_label16
 
-mov $str0, %eax	# Move str0,R7
-mov %eax, -28(%ebp)
+mov $str0, %eax	# Move str0,R3
+mov %eax, -12(%ebp)
 
-# Library __print(R7),Rdummy
-mov -28(%ebp), %eax
+# Library __print(R3),Rdummy
+mov -12(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -584,23 +576,23 @@ JMP _PROGRAM_END
 
 _end_label16:
 
-mov -32(%ebp), %eax	# ArrayLength R8,R9
+mov -8(%ebp), %eax	# ArrayLength R2,R5
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
-mov %eax, -36(%ebp)
+mov %eax, -20(%ebp)
 
-mov -36(%ebp), %eax	# Compare R7,R9
-cmp -28(%ebp), %eax
+mov -20(%ebp), %eax	# Compare R3,R5
+cmp -12(%ebp), %eax
 
 JG _end_label17
 
-mov $str1, %eax	# Move str1,R9
-mov %eax, -36(%ebp)
+mov $str1, %eax	# Move str1,R5
+mov %eax, -20(%ebp)
 
-# Library __print(R9),Rdummy
-mov -36(%ebp), %eax
+# Library __print(R5),Rdummy
+mov -20(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -609,16 +601,16 @@ JMP _PROGRAM_END
 
 _end_label17:
 
-mov -28(%ebp), %eax	# Compare 0,R7
+mov -12(%ebp), %eax	# Compare 0,R3
 cmp $0, %eax
 
 JGE _end_label18
 
-mov $str2, %eax	# Move str2,R7
-mov %eax, -28(%ebp)
+mov $str2, %eax	# Move str2,R3
+mov %eax, -12(%ebp)
 
-# Library __print(R7),Rdummy
-mov -28(%ebp), %eax
+# Library __print(R3),Rdummy
+mov -12(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -627,97 +619,21 @@ JMP _PROGRAM_END
 
 _end_label18:
 
-mov -32(%ebp), %eax	# MoveArray R8[R7],R5
-mov -28(%ebp), %ebx
+mov -8(%ebp), %eax	# MoveArray R2[R3],R4
+mov -12(%ebp), %ebx
 mov (%eax,%ebx,4), %ecx
-mov %ecx, -20(%ebp)
+mov %ecx, -16(%ebp)
 
-mov 12(%ebp), %eax	# Move param2_b,R9
-mov %eax, -36(%ebp)
+mov 12(%ebp), %eax	# Move param2_b,R5
+mov %eax, -20(%ebp)
 
-mov -48(%ebp), %eax	# Move var3_i,R8
-mov %eax, -32(%ebp)
+mov -40(%ebp), %eax	# Move var3_i,R6
+mov %eax, -24(%ebp)
 
-mov -36(%ebp), %eax	# Compare 0,R9
+mov -20(%ebp), %eax	# Compare 0,R5
 cmp $0, %eax
 
 JNZ _end_label19
-
-mov $str0, %eax	# Move str0,R8
-mov %eax, -32(%ebp)
-
-# Library __print(R8),Rdummy
-mov -32(%ebp), %eax
-push %eax
-call __print
-add $4, %esp
-
-JMP _PROGRAM_END
-
-_end_label19:
-
-mov -36(%ebp), %eax	# ArrayLength R9,R10
-mov -4(%eax), %eax
-mov $4, %ebx
-mov $0, %edx
-div %ebx
-mov %eax, -40(%ebp)
-
-mov -40(%ebp), %eax	# Compare R8,R10
-cmp -32(%ebp), %eax
-
-JG _end_label20
-
-mov $str1, %eax	# Move str1,R10
-mov %eax, -40(%ebp)
-
-# Library __print(R10),Rdummy
-mov -40(%ebp), %eax
-push %eax
-call __print
-add $4, %esp
-
-JMP _PROGRAM_END
-
-_end_label20:
-
-mov -32(%ebp), %eax	# Compare 0,R8
-cmp $0, %eax
-
-JGE _end_label21
-
-mov $str2, %eax	# Move str2,R8
-mov %eax, -32(%ebp)
-
-# Library __print(R8),Rdummy
-mov -32(%ebp), %eax
-push %eax
-call __print
-add $4, %esp
-
-JMP _PROGRAM_END
-
-_end_label21:
-
-mov -36(%ebp), %eax	# MoveArray R9[R8],R6
-mov -32(%ebp), %ebx
-mov (%eax,%ebx,4), %ecx
-mov %ecx, -24(%ebp)
-
-mov -20(%ebp), %eax	# Add R6,R5
-Add -24(%ebp), %eax
-mov %eax, -20(%ebp)
-
-mov -52(%ebp), %eax	# Move var2_sum,R7
-mov %eax, -28(%ebp)
-
-mov -48(%ebp), %eax	# Move var3_i,R6
-mov %eax, -24(%ebp)
-
-mov -28(%ebp), %eax	# Compare 0,R7
-cmp $0, %eax
-
-JNZ _end_label22
 
 mov $str0, %eax	# Move str0,R6
 mov %eax, -24(%ebp)
@@ -730,9 +646,9 @@ add $4, %esp
 
 JMP _PROGRAM_END
 
-_end_label22:
+_end_label19:
 
-mov -28(%ebp), %eax	# ArrayLength R7,R8
+mov -20(%ebp), %eax	# ArrayLength R5,R8
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
@@ -742,7 +658,7 @@ mov %eax, -32(%ebp)
 mov -32(%ebp), %eax	# Compare R6,R8
 cmp -24(%ebp), %eax
 
-JG _end_label23
+JG _end_label20
 
 mov $str1, %eax	# Move str1,R8
 mov %eax, -32(%ebp)
@@ -755,12 +671,12 @@ add $4, %esp
 
 JMP _PROGRAM_END
 
-_end_label23:
+_end_label20:
 
 mov -24(%ebp), %eax	# Compare 0,R6
 cmp $0, %eax
 
-JGE _end_label24
+JGE _end_label21
 
 mov $str2, %eax	# Move str2,R6
 mov %eax, -24(%ebp)
@@ -773,19 +689,93 @@ add $4, %esp
 
 JMP _PROGRAM_END
 
-_end_label24:
+_end_label21:
 
-mov -28(%ebp), %eax	# MoveArray R5,R7[R6]
-mov -24(%ebp), %ebx
-mov -20(%ebp), %ecx
-mov %ecx, (%eax,%ebx,4)
-
-mov -28(%ebp), %eax	# MoveArray R7[R6],R4
+mov -20(%ebp), %eax	# MoveArray R5[R6],R7
 mov -24(%ebp), %ebx
 mov (%eax,%ebx,4), %ecx
-mov %ecx, -16(%ebp)
+mov %ecx, -28(%ebp)
 
-mov -48(%ebp), %eax	# Move var3_i,R5
+mov -16(%ebp), %eax	# Move R4,R2
+mov %eax, -8(%ebp)
+
+mov -8(%ebp), %eax	# Add R7,R2
+Add -28(%ebp), %eax
+mov %eax, -8(%ebp)
+
+mov -44(%ebp), %eax	# Move var2_sum,R3
+mov %eax, -12(%ebp)
+
+mov -40(%ebp), %eax	# Move var3_i,R4
+mov %eax, -16(%ebp)
+
+mov -12(%ebp), %eax	# Compare 0,R3
+cmp $0, %eax
+
+JNZ _end_label22
+
+mov $str0, %eax	# Move str0,R4
+mov %eax, -16(%ebp)
+
+# Library __print(R4),Rdummy
+mov -16(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label22:
+
+mov -12(%ebp), %eax	# ArrayLength R3,R6
+mov -4(%eax), %eax
+mov $4, %ebx
+mov $0, %edx
+div %ebx
+mov %eax, -24(%ebp)
+
+mov -24(%ebp), %eax	# Compare R4,R6
+cmp -16(%ebp), %eax
+
+JG _end_label23
+
+mov $str1, %eax	# Move str1,R6
+mov %eax, -24(%ebp)
+
+# Library __print(R6),Rdummy
+mov -24(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label23:
+
+mov -16(%ebp), %eax	# Compare 0,R4
+cmp $0, %eax
+
+JGE _end_label24
+
+mov $str2, %eax	# Move str2,R4
+mov %eax, -16(%ebp)
+
+# Library __print(R4),Rdummy
+mov -16(%ebp), %eax
+push %eax
+call __print
+add $4, %esp
+
+JMP _PROGRAM_END
+
+_end_label24:
+
+mov -12(%ebp), %eax	# MoveArray R2,R3[R4]
+mov -16(%ebp), %ebx
+mov -8(%ebp), %ecx
+mov %ecx, (%eax,%ebx,4)
+
+mov -40(%ebp), %eax	# Move var3_i,R5
 mov %eax, -20(%ebp)
 
 mov $1, %eax	# Move 1,R6
@@ -796,19 +786,16 @@ Add -24(%ebp), %eax
 mov %eax, -20(%ebp)
 
 mov -20(%ebp), %eax	# Move R5,var3_i
-mov %eax, -48(%ebp)
-
-mov -48(%ebp), %eax	# Move var3_i,R4
-mov %eax, -16(%ebp)
+mov %eax, -40(%ebp)
 
 JMP _test_label13
 
 _end_label13:
 
-mov -52(%ebp), %eax	# Move var2_sum,R4
-mov %eax, -16(%ebp)
+mov -44(%ebp), %eax	# Move var2_sum,R1
+mov %eax, -4(%ebp)
 
-mov -16(%ebp), %eax	# Return R4
+mov -4(%ebp), %eax	# Return R1
 mov %ebp, %esp	# epilogue
 pop %ebp
 ret
@@ -821,11 +808,11 @@ push %ebp	# prologue
 mov %esp, %ebp
 sub $28, %esp
 
-mov $str4, %eax	# Move str4,R1
-mov %eax, -4(%ebp)
+mov $str4, %eax	# Move str4,R2
+mov %eax, -8(%ebp)
 
-# Library __print(R1),Rdummy
-mov -4(%ebp), %eax
+# Library __print(R2),Rdummy
+mov -8(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -838,19 +825,19 @@ mov %eax, -28(%ebp)
 
 _test_label25:
 
-mov 8(%ebp), %eax	# Move param1_a,R3
-mov %eax, -12(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R1
+mov %eax, -4(%ebp)
 
-mov -12(%ebp), %eax	# Compare 0,R3
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JNZ _end_label27
 
-mov $str0, %eax	# Move str0,R2
-mov %eax, -8(%ebp)
+mov $str0, %eax	# Move str0,R1
+mov %eax, -4(%ebp)
 
-# Library __print(R2),Rdummy
-mov -8(%ebp), %eax
+# Library __print(R1),Rdummy
+mov -4(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -859,52 +846,52 @@ JMP _PROGRAM_END
 
 _end_label27:
 
-mov -12(%ebp), %eax	# ArrayLength R3,R2
+mov -4(%ebp), %eax	# ArrayLength R1,R1
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
+mov %eax, -4(%ebp)
+
+mov $1, %eax	# Move 1,R2
 mov %eax, -8(%ebp)
 
-mov $1, %eax	# Move 1,R3
-mov %eax, -12(%ebp)
+mov -4(%ebp), %eax	# Sub R2,R1
+Sub -8(%ebp), %eax
+mov %eax, -4(%ebp)
 
-mov -8(%ebp), %eax	# Sub R3,R2
-Sub -12(%ebp), %eax
+mov -28(%ebp), %eax	# Move var1_i,R2
 mov %eax, -8(%ebp)
 
-mov -28(%ebp), %eax	# Move var1_i,R3
-mov %eax, -12(%ebp)
-
-mov -12(%ebp), %eax	# Compare R2,R3
-cmp -8(%ebp), %eax
+mov -8(%ebp), %eax	# Compare R1,R2
+cmp -4(%ebp), %eax
 
 JL _true_label26
 
-mov $0, %eax	# Move 0,R2
-mov %eax, -8(%ebp)
+mov $0, %eax	# Move 0,R1
+mov %eax, -4(%ebp)
 
 JMP _end_label26
 
 _true_label26:
 
-mov $1, %eax	# Move 1,R2
-mov %eax, -8(%ebp)
+mov $1, %eax	# Move 1,R1
+mov %eax, -4(%ebp)
 
 _end_label26:
 
-mov -8(%ebp), %eax	# Compare 1,R2
+mov -4(%ebp), %eax	# Compare 1,R1
 cmp $1, %eax
 
 JNZ _end_label25
 
-mov 8(%ebp), %eax	# Move param1_a,R5
-mov %eax, -20(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R3
+mov %eax, -12(%ebp)
 
 mov -28(%ebp), %eax	# Move var1_i,R4
 mov %eax, -16(%ebp)
 
-mov -20(%ebp), %eax	# Compare 0,R5
+mov -12(%ebp), %eax	# Compare 0,R3
 cmp $0, %eax
 
 JNZ _end_label28
@@ -922,7 +909,7 @@ JMP _PROGRAM_END
 
 _end_label28:
 
-mov -20(%ebp), %eax	# ArrayLength R5,R6
+mov -12(%ebp), %eax	# ArrayLength R3,R6
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
@@ -965,62 +952,59 @@ JMP _PROGRAM_END
 
 _end_label30:
 
-mov -20(%ebp), %eax	# MoveArray R5[R4],R2
+mov -12(%ebp), %eax	# MoveArray R3[R4],R5
 mov -16(%ebp), %ebx
 mov (%eax,%ebx,4), %ecx
-mov %ecx, -8(%ebp)
+mov %ecx, -20(%ebp)
 
-# Library __printi(R2),Rdummy
-mov -8(%ebp), %eax
+# Library __printi(R5),Rdummy
+mov -20(%ebp), %eax
 push %eax
 call __printi
 add $4, %esp
 
-mov $str5, %eax	# Move str5,R2
-mov %eax, -8(%ebp)
+mov $str5, %eax	# Move str5,R4
+mov %eax, -16(%ebp)
 
-# Library __print(R2),Rdummy
-mov -8(%ebp), %eax
+# Library __print(R4),Rdummy
+mov -16(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
 
-mov -28(%ebp), %eax	# Move var1_i,R3
-mov %eax, -12(%ebp)
-
-mov $1, %eax	# Move 1,R4
+mov -28(%ebp), %eax	# Move var1_i,R4
 mov %eax, -16(%ebp)
 
-mov -12(%ebp), %eax	# Add R4,R3
-Add -16(%ebp), %eax
-mov %eax, -12(%ebp)
+mov $1, %eax	# Move 1,R5
+mov %eax, -20(%ebp)
 
-mov -12(%ebp), %eax	# Move R3,var1_i
+mov -16(%ebp), %eax	# Add R5,R4
+Add -20(%ebp), %eax
+mov %eax, -16(%ebp)
+
+mov -16(%ebp), %eax	# Move R4,var1_i
 mov %eax, -28(%ebp)
-
-mov -28(%ebp), %eax	# Move var1_i,R2
-mov %eax, -8(%ebp)
 
 JMP _test_label25
 
 _end_label25:
 
-mov 8(%ebp), %eax	# Move param1_a,R5
-mov %eax, -20(%ebp)
+mov 8(%ebp), %eax	# Move param1_a,R2
+mov %eax, -8(%ebp)
 
-mov -28(%ebp), %eax	# Move var1_i,R4
-mov %eax, -16(%ebp)
+mov -28(%ebp), %eax	# Move var1_i,R3
+mov %eax, -12(%ebp)
 
-mov -20(%ebp), %eax	# Compare 0,R5
+mov -8(%ebp), %eax	# Compare 0,R2
 cmp $0, %eax
 
 JNZ _end_label31
 
-mov $str0, %eax	# Move str0,R4
-mov %eax, -16(%ebp)
+mov $str0, %eax	# Move str0,R3
+mov %eax, -12(%ebp)
 
-# Library __print(R4),Rdummy
-mov -16(%ebp), %eax
+# Library __print(R3),Rdummy
+mov -12(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -1029,23 +1013,23 @@ JMP _PROGRAM_END
 
 _end_label31:
 
-mov -20(%ebp), %eax	# ArrayLength R5,R6
+mov -8(%ebp), %eax	# ArrayLength R2,R5
 mov -4(%eax), %eax
 mov $4, %ebx
 mov $0, %edx
 div %ebx
-mov %eax, -24(%ebp)
+mov %eax, -20(%ebp)
 
-mov -24(%ebp), %eax	# Compare R4,R6
-cmp -16(%ebp), %eax
+mov -20(%ebp), %eax	# Compare R3,R5
+cmp -12(%ebp), %eax
 
 JG _end_label32
 
-mov $str1, %eax	# Move str1,R6
-mov %eax, -24(%ebp)
+mov $str1, %eax	# Move str1,R5
+mov %eax, -20(%ebp)
 
-# Library __print(R6),Rdummy
-mov -24(%ebp), %eax
+# Library __print(R5),Rdummy
+mov -20(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -1054,16 +1038,16 @@ JMP _PROGRAM_END
 
 _end_label32:
 
-mov -16(%ebp), %eax	# Compare 0,R4
+mov -12(%ebp), %eax	# Compare 0,R3
 cmp $0, %eax
 
 JGE _end_label33
 
-mov $str2, %eax	# Move str2,R4
-mov %eax, -16(%ebp)
+mov $str2, %eax	# Move str2,R3
+mov %eax, -12(%ebp)
 
-# Library __print(R4),Rdummy
-mov -16(%ebp), %eax
+# Library __print(R3),Rdummy
+mov -12(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -1072,13 +1056,13 @@ JMP _PROGRAM_END
 
 _end_label33:
 
-mov -20(%ebp), %eax	# MoveArray R5[R4],R2
-mov -16(%ebp), %ebx
+mov -8(%ebp), %eax	# MoveArray R2[R3],R4
+mov -12(%ebp), %ebx
 mov (%eax,%ebx,4), %ecx
-mov %ecx, -8(%ebp)
+mov %ecx, -16(%ebp)
 
-# Library __printi(R2),Rdummy
-mov -8(%ebp), %eax
+# Library __printi(R4),Rdummy
+mov -16(%ebp), %eax
 push %eax
 call __printi
 add $4, %esp

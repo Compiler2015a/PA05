@@ -26,57 +26,60 @@ str3:	.string "Should not print this or get here."
 __ic_main:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $28, %esp
+sub $16, %esp
+
+mov $3, %eax	# Move 3,R1
+mov %eax, -4(%ebp)
 
 mov $0, %eax	# Move 0,R2
 mov %eax, -8(%ebp)
 
-mov $3, %eax	# Move 3,R3
-mov %eax, -12(%ebp)
-
-mov -8(%ebp), %eax	# Sub R3,R2
-Sub -12(%ebp), %eax
+mov -8(%ebp), %eax	# Sub R1,R2
+Sub -4(%ebp), %eax
 mov %eax, -8(%ebp)
 
-mov -8(%ebp), %eax	# Move R2,var1_a
-mov %eax, -28(%ebp)
+mov -8(%ebp), %eax	# Move R2,R1
+mov %eax, -4(%ebp)
 
-mov $str0, %eax	# Move str0,R3
-mov %eax, -12(%ebp)
-
-# Library __println(R3),Rdummy
-mov -12(%ebp), %eax
-push %eax
-call __println
-add $4, %esp
-
-mov $str1, %eax	# Move str1,R3
-mov %eax, -12(%ebp)
-
-# Library __println(R3),Rdummy
-mov -12(%ebp), %eax
-push %eax
-call __println
-add $4, %esp
-
-mov -28(%ebp), %eax	# Move var1_a,R4
+mov -4(%ebp), %eax	# Move R1,var1_a
 mov %eax, -16(%ebp)
 
-mov -16(%ebp), %eax	# Mul 4,R4
+mov $str0, %eax	# Move str0,R2
+mov %eax, -8(%ebp)
+
+# Library __println(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __println
+add $4, %esp
+
+mov $str1, %eax	# Move str1,R2
+mov %eax, -8(%ebp)
+
+# Library __println(R2),Rdummy
+mov -8(%ebp), %eax
+push %eax
+call __println
+add $4, %esp
+
+mov -16(%ebp), %eax	# Move var1_a,R1
+mov %eax, -4(%ebp)
+
+mov -4(%ebp), %eax	# Mul 4,R1
 mov $4, %ebx
 mul %ebx
-mov %eax, -16(%ebp)
+mov %eax, -4(%ebp)
 
-mov -16(%ebp), %eax	# Compare 0,R4
+mov -4(%ebp), %eax	# Compare 0,R1
 cmp $0, %eax
 
 JGE _end_label1
 
-mov $str2, %eax	# Move str2,R3
-mov %eax, -12(%ebp)
+mov $str2, %eax	# Move str2,R1
+mov %eax, -4(%ebp)
 
-# Library __print(R3),Rdummy
-mov -12(%ebp), %eax
+# Library __print(R1),Rdummy
+mov -4(%ebp), %eax
 push %eax
 call __print
 add $4, %esp
@@ -85,21 +88,21 @@ JMP _PROGRAM_END
 
 _end_label1:
 
-# Library __allocateArray(R4),R3
-mov -16(%ebp), %eax
+# Library __allocateArray(R1),R1
+mov -4(%ebp), %eax
 push %eax
 call __allocateArray
 add $4, %esp
+mov %eax, -4(%ebp)
+
+mov -4(%ebp), %eax	# Move R1,var2_arr
 mov %eax, -12(%ebp)
 
-mov -12(%ebp), %eax	# Move R3,var2_arr
-mov %eax, -24(%ebp)
+mov $str3, %eax	# Move str3,R2
+mov %eax, -8(%ebp)
 
-mov $str3, %eax	# Move str3,R4
-mov %eax, -16(%ebp)
-
-# Library __println(R4),Rdummy
-mov -16(%ebp), %eax
+# Library __println(R2),Rdummy
+mov -8(%ebp), %eax
 push %eax
 call __println
 add $4, %esp

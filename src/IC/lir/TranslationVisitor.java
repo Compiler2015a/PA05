@@ -49,6 +49,7 @@ import IC.AST.While;
 import IC.SymbolsTable.IDSymbolsKinds;
 import IC.lir.Instructions.*;
 import IC.CodeGeneration.AssemblyMethod;
+import IC.lir.Targets.*;
 
 public class TranslationVisitor implements Visitor{
 	int target;
@@ -68,8 +69,6 @@ public class TranslationVisitor implements Visitor{
 	};
 	Map<String,Integer> arrs;
 
-	private boolean assignmentCall = false;
-
 	private Queue<ASTNode> nodeHandlingQueue;
 	// registers
 	//private Map<String, Integer> _registers;
@@ -85,6 +84,9 @@ public class TranslationVisitor implements Visitor{
 	private Boolean isMainMethod;
 	private Map<String, AssemblyMethod> methodVariablesMap;
 	private int currentMethodRegisterCounter;
+	
+	private Target assignmentTarget;
+	private boolean isAssignment = false;
 	
 	public TranslationVisitor() {
 		this.classLayouts = new HashMap<String,ClassLayout>();
@@ -207,7 +209,6 @@ public class TranslationVisitor implements Visitor{
 	private Object visitMethod(Method method)
 	{
 		isMainMethod = method.getName().equals("main");
-		this.target = 1;
 		this.currentMethodKind = method.getSymbolsTable().getEntry(method.getName()).getKind();
 		// add method label
 		currentClassName = method.getSymbolsTable().getId();
@@ -223,6 +224,7 @@ public class TranslationVisitor implements Visitor{
 
 		// add all statements
 		for (Statement stmt : method.getStatements()) {
+			this.target = 0;
 			stmt.accept(this);
 		}
 		
@@ -264,12 +266,35 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(Assignment assignment) {
-		incrementRegisterTarget(1);
-		assignment.getAssignment().accept(this);
-		target--;
-		assignmentCall=true;
+		RegisterTarget assignmentValueTarget = (RegisterTarget)assignment.
+				getAssignment().accept(this);
+		isAssignment = true;
 		assignment.getVariable().accept(this);
-		assignmentCall=false;
+		isAssignment = false;
+		
+		if (assignmentTarget instanceof MemoryTarget) {
+			MemoryTarget memTarget = (MemoryTarget)assignmentTarget;
+			instructions.add(new MoveInstr(
+					registers.request(assignmentValueTarget.getTargetValue()), 
+					memTarget.getMemoryTarget()));
+		}
+		
+		if (assignmentTarget instanceof ArrayTarget) {
+			ArrayTarget arrTarget = (ArrayTarget)assignmentTarget;
+			instructions.add(new MoveArrayInstr(
+					registers.request(arrTarget.getArrayTargetValue()), 
+					registers.request(arrTarget.getIndexTargetValue()),
+					registers.request(assignmentValueTarget.getTargetValue()), false));
+		}
+		
+		if (assignmentTarget instanceof FieldTarget) {
+			FieldTarget fieldTarget = (FieldTarget)assignmentTarget;
+			instructions.add(new MoveFieldInstr(
+					registers.request(fieldTarget.getTargetValue()), 
+					new Immediate(fieldTarget.getOffset()), 
+					registers.request(assignmentValueTarget.getTargetValue()), false)); 
+		}
+		
 		//instructions.add(currentAssignmentInstruction);
 		//target--;
 		return null;
@@ -286,8 +311,9 @@ public class TranslationVisitor implements Visitor{
 	public Object visit(Return returnStatement) {
 		if (!isMainMethod) {
 			if(returnStatement.hasValue()) {
-				returnStatement.getValue().accept(this);
-				instructions.add(new ReturnInstr(registers.request(target)));
+				RegisterTarget retValueRegTarget = (RegisterTarget)returnStatement.getValue().
+						accept(this);
+				instructions.add(new ReturnInstr(registers.request(retValueRegTarget.getTargetValue())));
 			} else {
 				instructions.add(new ReturnInstr(registers.request(-1)));
 			}
@@ -298,10 +324,12 @@ public class TranslationVisitor implements Visitor{
 	@Override
 	public Object visit(If ifStatement) {
 
-		ifStatement.getCondition().accept(this);
+		RegisterTarget ifCondRegTarget = (RegisterTarget)ifStatement.getCondition().
+				accept(this);
 		labelHandler.increaseLabelsCounter();
 		int ifLabel = labelHandler.getLabelsCounter();
-		instructions.add(new CompareInstr(new Immediate(1), registers.request(target)));
+		instructions.add(new CompareInstr(new Immediate(1), 
+				registers.request(ifCondRegTarget.getTargetValue())));
 		CommonLabels jumpingLabel = ifStatement.hasElse() 
 				? CommonLabels.FALSE_LABEL : CommonLabels.END_LABEL;
 		instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(jumpingLabel, ifLabel), Cond.False));
@@ -321,8 +349,10 @@ public class TranslationVisitor implements Visitor{
 		labelHandler.increaseLabelsCounter();
 		int whileLabel = labelHandler.getLabelsCounter();
 		instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TEST_LABEL, whileLabel)));
-		whileStatement.getCondition().accept(this);
-		instructions.add(new CompareInstr(new Immediate(1), registers.request(target)));
+		RegisterTarget whileCondRegTarget = (RegisterTarget)whileStatement.
+				getCondition().accept(this);
+		instructions.add(new CompareInstr(new Immediate(1), 
+				registers.request(whileCondRegTarget.getTargetValue())));
 		instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, whileLabel), Cond.False));
 
 		this._whileLabelStack.add(CommonLabels.TEST_LABEL.toString()+whileLabel);
@@ -351,18 +381,19 @@ public class TranslationVisitor implements Visitor{
 	public Object visit(StatementsBlock statementsBlock) {
 
 		for(Statement stmnt : statementsBlock.getStatements())
-		{
 			stmnt.accept(this);
-		}
+		
 		return null;
 	}
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
 		if (localVariable.hasInitValue()) {
-			localVariable.getInitValue().accept(this);
-			instructions.add(new MoveInstr(registers.request(target), new Memory(localVariable.getSymbolEntry().getGlobalId())));
-			incrementRegisterTarget(1);
+			RegisterTarget initValueRegTareget = (RegisterTarget)localVariable.
+					getInitValue().accept(this);
+			instructions.add(new MoveInstr(
+					registers.request(initValueRegTareget.getTargetValue()), 
+					new Memory(localVariable.getSymbolEntry().getGlobalId())));
 		}
 		return null;
 	}
@@ -370,72 +401,87 @@ public class TranslationVisitor implements Visitor{
 	@Override
 	public Object visit(VariableLocation location) {
 		if (location.isExternal()) {
-			boolean tmp = assignmentCall;
-			assignmentCall = false;
-			location.getLocation().accept(this);
-			assignmentCall = tmp;
-			checkNullRefAndEmit(registers.request(target));
+			boolean isAssignmentSaved = isAssignment;
+			isAssignment = false;
+			RegisterTarget locationTarget = (RegisterTarget)location.getLocation().accept(this);
+			isAssignment = isAssignmentSaved;
+			checkNullRefAndEmit(registers.request(locationTarget.getTargetValue()));
 			String externalClsName = location.getLocation().getEntryType().toString();
 			int fieldIndex = this.classLayouts.get(externalClsName).getFieldIndex(location.getName());
-			if(assignmentCall)
-				instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(fieldIndex), registers.request(target+1), false)); 
-
-			instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(fieldIndex), registers.request(target), true));
+			
+			if (isAssignment) {
+				this.assignmentTarget = new FieldTarget(locationTarget.getTargetValue(), 
+						fieldIndex);
+				return null;
+			}
+			else
+			{
+				instructions.add(new MoveFieldInstr(registers.request(
+						locationTarget.getTargetValue()), 
+						new Immediate(fieldIndex), 
+						registers.request(locationTarget.getTargetValue()), true));
+				return locationTarget;
+			}
 		}
-		else {
-			if (location.getSymbolEntry().getKind() == IDSymbolsKinds.FIELD) {
-				instructions.add(new MoveInstr(new Memory("this"), registers.request(target)));
-				int fieldIndex = this.classLayouts.get(currentClassName).getFieldIndex(location.getName());
-				if(assignmentCall)
-					instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(fieldIndex), registers.request(target+1), false)); 
-				instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(fieldIndex), registers.request(target), true));
+
+		incrementRegisterTarget(1);
+		if (location.getSymbolEntry().getKind() == IDSymbolsKinds.FIELD) {
+			int thisTarget = target;
+			instructions.add(new MoveInstr(new Memory("this"), registers.request(thisTarget)));
+			int fieldIndex = this.classLayouts.get(currentClassName).getFieldIndex(location.getName());
+			if (isAssignment) {
+				this.assignmentTarget = new FieldTarget(thisTarget, fieldIndex);
+				return null;
 			}
 			else {
-				Memory locationMemory = new Memory(location.getSymbolEntry().getGlobalId());
-				if(assignmentCall)
-					instructions.add(new MoveInstr(registers.request(target+1), locationMemory));
-				instructions.add(new MoveInstr(locationMemory, registers.request(target)));
+				instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(fieldIndex), registers.request(target), true));
+				return new RegisterTarget(target);
 			}
 		}
-		return null;
+		else {
+			Memory locationMemory = new Memory(location.getSymbolEntry().getGlobalId());
+			if (isAssignment) {
+				this.assignmentTarget = new MemoryTarget(locationMemory);
+				return null;
+			}
+			else {
+				instructions.add(new MoveInstr(locationMemory, registers.request(target)));
+				return new RegisterTarget(target);
+			}
+		}
+		
 	}
 
 	@Override
 	public Object visit(ArrayLocation location) {
-
-		for(Integer cl : arrs.values()) {
-			System.out.println(cl);
-		}
-
-		int assignmentTarget = target;
-		incrementRegisterTarget(3);
-
-		boolean tmp = assignmentCall;
-		assignmentCall = false;
-		location.getArray().accept(this);
-		target--;
-		location.getIndex().accept(this);
-		assignmentCall = tmp;
 		
-		checkNullRefAndEmit(registers.request(target + 1));
+		boolean isAssignmentSaved = isAssignment;
+		isAssignment = false;
+		RegisterTarget arrayBaseRegTarget = (RegisterTarget)location.getArray().accept(this);
+		RegisterTarget arrayIndexTarget = (RegisterTarget)location.getIndex().accept(this);
+		isAssignment = isAssignmentSaved;
+		
+		checkNullRefAndEmit(registers.request(arrayBaseRegTarget.getTargetValue()));
 		// check if index > length 
-		checkGTLengthAndEmit(registers.request(target),registers.request(target+1));
+		checkGTLengthAndEmit(registers.request(arrayIndexTarget.getTargetValue()),
+				registers.request(arrayBaseRegTarget.getTargetValue()));
 
 		// check if index < 0
-		checkSizeGtZeroAndEmit(registers.request(target));
-
+		checkSizeGtZeroAndEmit(registers.request(arrayIndexTarget.getTargetValue()));
 		
-		if(assignmentCall)
-			instructions.add(new MoveArrayInstr(
-					registers.request(target+1), registers.request(target),
-					registers.request(assignmentTarget+1), false));
-		instructions.add(new MoveArrayInstr(registers.request(target+1), registers.request(target), registers.request(/*--target*/assignmentTarget), true));
+		if (isAssignment) {
+			this.assignmentTarget = new ArrayTarget(arrayBaseRegTarget.getTargetValue(), 
+					arrayIndexTarget.getTargetValue());
+			return null;
+		}
+		
+		incrementRegisterTarget(1);
+		instructions.add(new MoveArrayInstr(registers.request(
+				arrayBaseRegTarget.getTargetValue()), 
+				registers.request(arrayIndexTarget.getTargetValue()), 
+				registers.request(target), true));
 
-		target=assignmentTarget;
-
-
-
-		return null;
+		return new RegisterTarget(target);
 	}
 
 	private void checkGTLengthAndEmit(Reg index,Reg array)
@@ -460,44 +506,46 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(StaticCall call) {
-
+		incrementRegisterTarget(1);
 		int unusedMethodTarget = target;
 		//library method call		
 		if (call.getClassName().equals("Library")) {
 			List<Operand> operands = new ArrayList<Operand>();
 
 			for (Expression arg : call.getArguments()) {
-				arg.accept(this);
-				operands.add(registers.request(target));
-				incrementRegisterTarget(1);
+				RegisterTarget argRegTarget = (RegisterTarget)arg.accept(this);
+				operands.add(registers.request(argRegTarget.getTargetValue()));
 			}
+			
 			target = unusedMethodTarget;
 			int retTrarget = call.getMethodType().getReturnType().isVoidType() ? -1 : target;
 			instructions.add(new LibraryCall(labelHandler.requestStr("__" + call.getName()), operands, registers.request(retTrarget)));
+			return new RegisterTarget(retTrarget);
 		} // regular method call
-		else {
-			List<ParamOpPair> paramOpRegs = new ArrayList<ParamOpPair>();
-			String staticCallMethodFullName = classLayouts.get(call.getClassName()).getMethodString(call.getName());
-			List<String> methodParams = this.methodFullNamesMap.get(staticCallMethodFullName);
-			int i = 0;
-			for (Expression arg : call.getArguments()) {
+		
+		List<ParamOpPair> paramOpRegs = new ArrayList<ParamOpPair>();
+		String staticCallMethodFullName = classLayouts.get(call.getClassName()).getMethodString(call.getName());
+		List<String> methodParams = this.methodFullNamesMap.get(staticCallMethodFullName);
+		int i = 0;
+		for (Expression arg : call.getArguments()) {
 
-				arg.accept(this);
-				paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), registers.request(target)));
-				i++;
-				incrementRegisterTarget(1);
-			}
-			target = unusedMethodTarget;
-			int retTrarget = call.getMethodType().getReturnType().isVoidType() ? -1 : target;
-			instructions.add(new IC.lir.Instructions.StaticCall(
-					labelHandler.requestStr(staticCallMethodFullName), paramOpRegs, 
-					registers.request(retTrarget)));
+			RegisterTarget argRegTarget = (RegisterTarget)arg.accept(this);
+			paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), 
+					registers.request(argRegTarget.getTargetValue())));
+			i++;
 		}
-		return null;
+		target = unusedMethodTarget;
+		int retTrarget = call.getMethodType().getReturnType().isVoidType() ? -1 : target;
+		instructions.add(new IC.lir.Instructions.StaticCall(
+				labelHandler.requestStr(staticCallMethodFullName), paramOpRegs, 
+				registers.request(retTrarget)));
+	
+		return new RegisterTarget(retTrarget);
 	}
 
 	@Override
 	public Object visit(VirtualCall call) {
+		int clsTarget;
 		if ((!call.isExternal()) && (currentMethodKind == IDSymbolsKinds.STATIC_METHOD)) {
 			StaticCall staticCall = new StaticCall(call.getLine(),
 					this.currentClassName, call.getName(), call.getArguments());
@@ -506,15 +554,16 @@ public class TranslationVisitor implements Visitor{
 			return staticCall.accept(this);
 		}
 		if (call.isExternal()) {
-			call.getLocation().accept(this);
+			clsTarget = ((RegisterTarget)call.getLocation().accept(this)).getTargetValue();
 		}
-		else 
+		else {
+			incrementRegisterTarget(1);
 			instructions.add(new MoveInstr(new Memory("this"), registers.request(target)));
-		
-		int clsTarget = target;
+			clsTarget = target;
+		}
 
 		//check if the ref is null
-		checkNullRefAndEmit(registers.request(target));
+		checkNullRefAndEmit(registers.request(clsTarget));
 
 		String clsName = call.isExternal() ?
 				call.getLocation().getEntryType().toString() : this.currentClassName;
@@ -525,10 +574,10 @@ public class TranslationVisitor implements Visitor{
 				List<String> methodParams = this.methodFullNamesMap.get(virtualCallMethodFullName);
 				int i = 0;
 				for (Expression arg : call.getArguments()) {
-					arg.accept(this);
-					paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), registers.request(target)));
+					RegisterTarget argRegTarget = (RegisterTarget)arg.accept(this);
+					paramOpRegs.add(new ParamOpPair(new Memory(methodParams.get(i)), 
+							registers.request(argRegTarget.getTargetValue())));
 					i++;
-					incrementRegisterTarget(1);
 				}
 				Immediate funcIndex = new Immediate(classLayouts.get(clsName).getMethodIndex(call.getName()));
 				target = unusedMethodTarget;
@@ -536,43 +585,44 @@ public class TranslationVisitor implements Visitor{
 				instructions.add(new IC.lir.Instructions.VirtualCall(
 						registers.request(clsTarget), funcIndex, paramOpRegs, registers.request(retTrarget)));
 
-				return null;
+				return new RegisterTarget(retTrarget);
 	}
 
 	@Override
 	public Object visit(This thisExpression) {
+		incrementRegisterTarget(1);
 		instructions.add(new MoveInstr(new Memory("this"), registers.request(target)));
-		return true;
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(NewClass newClass) {
+		incrementRegisterTarget(1);
 		List<Operand> args = new ArrayList<Operand>();
 		args.add(new Immediate(classLayouts.get(newClass.getName()).getAllocatedSize()));
 		instructions.add(new LibraryCall(labelHandler.requestStr("__allocateObject"), args , registers.request(target)));
 
 		instructions.add(new MoveFieldInstr(registers.request(target), new Immediate(0), labelHandler.requestStr("_DV_"+newClass.getName()), false));
 		
-		return null;
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(NewArray newArray) {
 
 		List<Operand> args = new ArrayList<Operand>();
-		incrementRegisterTarget(1);
 
-		newArray.getSize().accept(this); 
-		instructions.add(new BinOpInstr(new Immediate(4), registers.request(target), Operator.MUL)); //multiply size by 4
-		args.add(registers.request(target--));
+		RegisterTarget sizeRegTarget = (RegisterTarget)newArray.getSize().accept(this); 
+		instructions.add(new BinOpInstr(new Immediate(4), 
+				registers.request(sizeRegTarget.getTargetValue()), Operator.MUL)); //multiply size by 4
+		args.add(registers.request(sizeRegTarget.getTargetValue()));
 
 		// check if array size is non-negative
 		checkSizeGtZeroAndEmit(args.get(0));	
 		
-		
 		instructions.add(new LibraryCall(labelHandler.requestStr("__allocateArray"), args, registers.request(target)));
 		
-		return true;
+		return new RegisterTarget(target);
 	}
 
 	private void checkSizeGtZeroAndEmit(Operand size)
@@ -594,12 +644,18 @@ public class TranslationVisitor implements Visitor{
 	@Override
 	public Object visit(Length length) {
 		incrementRegisterTarget(1);
-		length.getArray().accept(this);
+		int resultTarget = target;
 		target--;
-		checkNullRefAndEmit(registers.request(target + 1));
-		instructions.add(new ArrayLengthInstr(registers.request(target+1), registers.request(target)));
+		RegisterTarget arrayRegTarget = (RegisterTarget)length.getArray().accept(this);
+		checkNullRefAndEmit(registers.request(arrayRegTarget.getTargetValue()));
+		if (arrayRegTarget.getTargetValue() != resultTarget)
+			instructions.add(new MoveInstr(registers.request(arrayRegTarget.getTargetValue()), 
+					registers.request(resultTarget)));
+		target = resultTarget;
+		instructions.add(new ArrayLengthInstr(registers.request(target), 
+				registers.request(target)));
 
-		return null;
+		return new RegisterTarget(target);
 	}
 
 	private void checkNullRefAndEmit(Reg reg)
@@ -620,262 +676,319 @@ public class TranslationVisitor implements Visitor{
 
 	@Override
 	public Object visit(MathBinaryOp binaryOp) {
-		binaryOp.getFirstOperand().accept(this);
 		incrementRegisterTarget(1);
-		binaryOp.getSecondOperand().accept(this);
+		int resultTarget = target;
+		target--;
+		RegisterTarget firstOpTarget = (RegisterTarget)binaryOp.
+				getFirstOperand().accept(this);
+		RegisterTarget secondOpTarget = (RegisterTarget)binaryOp.
+				getSecondOperand().accept(this);
 		//String instruction="";
 		Operator op;
 		switch(binaryOp.getOperator()) {
-		case PLUS:
-			if(binaryOp.getFirstOperand().getEntryType().isStringType() && binaryOp.getSecondOperand().getEntryType().isStringType()){
-				List<Operand> args = new ArrayList<Operand>();
-				args.add(registers.request(target-1));
-				args.add(registers.request(target));
-				instructions.add(new LibraryCall(labelHandler.requestStr("__stringCat"), args, registers.request(--target)));
-				return true;
-			} else {
-				//instruction="Add";
-				op = Operator.ADD;
+			case PLUS:
+				if(binaryOp.getFirstOperand().getEntryType().isStringType() && binaryOp.getSecondOperand().getEntryType().isStringType()){
+					List<Operand> args = new ArrayList<Operand>();
+					args.add(registers.request(firstOpTarget.getTargetValue()));
+					args.add(registers.request(secondOpTarget.getTargetValue()));
+					instructions.add(new LibraryCall(labelHandler.requestStr("__stringCat"), args, registers.request(resultTarget)));
+					target = resultTarget;
+					return new RegisterTarget(target);
+				} else {
+					//instruction="Add";
+					op = Operator.ADD;
+					break;
+				}
+			case MINUS:
+				//instruction="Sub";
+				op = Operator.SUB;
 				break;
-			}
-		case MINUS:
-			//instruction="Sub";
-			op = Operator.SUB;
-			break;
-		case DIVIDE:
-			//instruction="Div";
-			op = Operator.DIV;
-			break;
-		case MULTIPLY:
-			//instruction="Mul";
-			op = Operator.MUL;
-			break;
-		case MOD:
-			//instruction="Mod";
-			op = Operator.MOD;
-			break;
-		default:
-			return false;
+			case DIVIDE:
+				//instruction="Div";
+				op = Operator.DIV;
+				break;
+			case MULTIPLY:
+				//instruction="Mul";
+				op = Operator.MUL;
+				break;
+			case MOD:
+				//instruction="Mod";
+				op = Operator.MOD;
+				break;
+			default:
+				return null;
 		}
-		//emit(instruction+" R"+target+",R"+(--target));
-		Reg leftReg=registers.request(target);
-		Reg rightReg=registers.request(--target);
 
 		//zero division check
 		if(binaryOp.getOperator()==IC.BinaryOps.DIVIDE || binaryOp.getOperator()==IC.BinaryOps.MOD)
-			divisionCheck(leftReg);
-
-		instructions.add(new BinOpInstr(leftReg, rightReg, op));
-		return true;
+			divisionCheck(registers.request(secondOpTarget.getTargetValue()));
+		
+		if (firstOpTarget.getTargetValue() != resultTarget)
+			instructions.add(new MoveInstr(registers.request(firstOpTarget.getTargetValue()), registers.request(resultTarget)));
+			
+		instructions.add(new BinOpInstr(registers.request(secondOpTarget.getTargetValue()), 
+				registers.request(resultTarget), op));
+		
+		target = resultTarget;
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(LogicalBinaryOp binaryOp) {
-
+		incrementRegisterTarget(1);
+		int resultTarget = target;
+		target--;
 		//incrementRegisterTarget(1);
 		//binaryOp.getSecondOperand().accept(this);
 		int labelCounter =labelHandler.increaseLabelsCounter();
+		RegisterTarget firstOpTarget, secondOpTarget;
 		switch(binaryOp.getOperator()) {
-		case GT:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpG _true_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter), Cond.G));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter)));
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
-			break;
-		case GTE:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpGE _true_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter), Cond.GE));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
-			//emit(CommonLabels.TRUE_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case EQUAL:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpFalse _true_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.True));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			//emit(CommonLabels.TRUE_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case NEQUAL:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpFalse _false_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.False));
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			//emit(CommonLabels.FALSE_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case LT:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpL _true_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.L));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			//emit(CommonLabels.TRUE_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case LTE:
-			binaryOp.getSecondOperand().accept(this);
-			incrementRegisterTarget(1);
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare R,"+target+",R"+(--target));
-			instructions.add(new CompareInstr(registers.request(--target), registers.request(target+1)));
-			//emit("JumpLE _true_label"+labels);
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.LE));
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			//emit("Jump _end_label"+labels);
-			instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));;
-			//emit(CommonLabels.TRUE_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case LAND:
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare 0,R"+target);
-			//emit("JumpTrue _end_label"+labels);
-			instructions.add(new CompareInstr(new Immediate(0), registers.request(target)));
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.True));
-			incrementRegisterTarget(1);
-			binaryOp.getSecondOperand().accept(this);
-			//emit("And R"+target+",R"+(--target));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			instructions.add(new BinOpInstr(registers.request(--target), registers.request(target+1), Operator.AND));
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		case LOR:
-			binaryOp.getFirstOperand().accept(this);
-			//emit("Compare 1,R"+target);
-			//emit("JumpTrue _end_label"+labels);
-			instructions.add(new CompareInstr(new Immediate(1), registers.request(target)));
-			instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.True));
-			binaryOp.getSecondOperand().accept(this);
-			//emit("Or R"+target+",R"+(--target));
-			//emit(CommonLabels.END_LABEL.toString()+labels);
-			
-			instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
-			break;
-		default:
+			case GT:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(firstOpTarget.getTargetValue())));
+				//emit("JumpG _true_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter), Cond.G));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter)));
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
+				break;
+			case GTE:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(secondOpTarget.getTargetValue())));
+				//emit("JumpGE _true_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL,labelCounter), Cond.GE));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL,labelCounter)));
+				//emit(CommonLabels.TRUE_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case EQUAL:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(firstOpTarget.getTargetValue())));
+				//emit("JumpFalse _true_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.True));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				//emit(CommonLabels.TRUE_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case NEQUAL:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(firstOpTarget.getTargetValue())));
+				//emit("JumpFalse _false_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.False));
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				//emit(CommonLabels.FALSE_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case LT:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(firstOpTarget.getTargetValue())));
+				//emit("JumpL _true_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.L));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				//emit(CommonLabels.TRUE_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case LTE:
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare R,"+target+",R"+(--target));
+				instructions.add(new CompareInstr(registers.request(secondOpTarget.getTargetValue()), 
+						registers.request(firstOpTarget.getTargetValue())));
+				//emit("JumpLE _true_label"+labels);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter), Cond.LE));
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(resultTarget)));
+				//emit("Jump _end_label"+labels);
+				instructions.add(new JumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));;
+				//emit(CommonLabels.TRUE_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.TRUE_LABEL, labelCounter)));
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(resultTarget)));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case LAND:
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				if (firstOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(firstOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				//emit("Compare 0,R"+target);
+				//emit("JumpTrue _end_label"+labels);
+				instructions.add(new CompareInstr(new Immediate(0), registers.request(resultTarget)));
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.True));
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			case LOR:
+				firstOpTarget = (RegisterTarget)binaryOp.getFirstOperand().accept(this);
+				//emit("Compare 1,R"+target);
+				//emit("JumpTrue _end_label"+labels);
+				if (firstOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(firstOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new CompareInstr(new Immediate(1), registers.request(resultTarget)));
+				instructions.add(new CondJumpInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter), Cond.True));
+				binaryOp.getSecondOperand().accept(this);
+				//emit("Or R"+target+",R"+(--target));
+				//emit(CommonLabels.END_LABEL.toString()+labels);
+				secondOpTarget = (RegisterTarget)binaryOp.getSecondOperand().accept(this);
+				if (secondOpTarget.getTargetValue() != resultTarget)
+					instructions.add(new MoveInstr(registers.request(secondOpTarget.getTargetValue()), 
+							registers.request(resultTarget)));
+				target = resultTarget;	
+				instructions.add(new LabelInstr(labelHandler.innerLabelRequest(CommonLabels.END_LABEL, labelCounter)));
+				break;
+			default:
 
 		}
 
-		return null;
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(MathUnaryOp unaryOp) {
 		incrementRegisterTarget(1);
-		unaryOp.getOperand().accept(this);
+		int resultTarget = target;
 		target--;
+		RegisterTarget opTarget = (RegisterTarget)unaryOp.getOperand().accept(this);
+		incrementRegisterTarget(1);
 		instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-		instructions.add(new BinOpInstr(registers.request(target+1), registers.request(target), Operator.SUB));
-		return null;
+		instructions.add(new BinOpInstr(registers.request(opTarget.getTargetValue()), 
+				registers.request(target), Operator.SUB));
+		instructions.add(new MoveInstr(registers.request(target), registers.request(resultTarget)));
+			
+		target = resultTarget;	
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
 		incrementRegisterTarget(1);
-		unaryOp.getOperand().accept(this);
+		int resultTarget = target;
 		target--;
+		RegisterTarget opTarget = (RegisterTarget)unaryOp.getOperand().accept(this);
+
 		//emit("Move 1,R"+target);
 		//emit("Sub R"+(target+1)+",R"+target);
 		instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-		instructions.add(new BinOpInstr(registers.request(target+1), registers.request(target), Operator.SUB));
-		return null;
+		instructions.add(new BinOpInstr(registers.request(opTarget.getTargetValue()), 
+				registers.request(target), Operator.SUB));
+		instructions.add(new MoveInstr(registers.request(target), registers.request(resultTarget)));
+		target = resultTarget;	
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(Literal literal) {
+		incrementRegisterTarget(1);
 		switch(literal.getType()) {
-		case STRING:
-			//emit("Move str"+stringLiterals.add((String)literal.getValue())+",R"+target); 
-			instructions.add(new MoveInstr(new Memory("str"+stringLiterals.add((String)literal.getValue())), registers.request(target)));
-			break;
-		case INTEGER:
-			//emit("Move "+((Integer)literal.getValue())+",R"+target);
-			instructions.add(new MoveInstr(new Immediate((Integer)literal.getValue()), registers.request(target)));
-			break;
-		case TRUE:
-			//emit("Move 1,R"+target);
-			instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
-			break;
-		case FALSE:
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			break;
-		case NULL:
-			//emit("Move 0,R"+target);
-			instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
-			break;
-		default:
+			case STRING:
+				//emit("Move str"+stringLiterals.add((String)literal.getValue())+",R"+target); 
+				instructions.add(new MoveInstr(new Memory("str"+stringLiterals.add((String)literal.getValue())), registers.request(target)));
+				break;
+			case INTEGER:
+				//emit("Move "+((Integer)literal.getValue())+",R"+target);
+				instructions.add(new MoveInstr(new Immediate((Integer)literal.getValue()), registers.request(target)));
+				break;
+			case TRUE:
+				//emit("Move 1,R"+target);
+				instructions.add(new MoveInstr(new Immediate(1), registers.request(target)));
+				break;
+			case FALSE:
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
+				break;
+			case NULL:
+				//emit("Move 0,R"+target);
+				instructions.add(new MoveInstr(new Immediate(0), registers.request(target)));
+				break;
+			default:
 
 		}
-		return null; 
+		return new RegisterTarget(target);
 	}
 
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
-		expressionBlock.getExpression().accept(this);
-
-		return null;
+		return expressionBlock.getExpression().accept(this);
 	}
 
 	public void emit(String s) {

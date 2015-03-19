@@ -19,7 +19,7 @@ _DV_B:	.long _DV_A_func1,_DV_B_func2,_DV_B_func3
 _DV_A_func1:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $0, %esp
+sub $4, %esp
 
 mov $5, %eax	# Move 5,R1
 mov %eax, -4(%ebp)
@@ -35,7 +35,7 @@ ret
 _DV_A_func2:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $0, %esp
+sub $4, %esp
 
 mov $6, %eax	# Move 6,R1
 mov %eax, -4(%ebp)
@@ -67,7 +67,7 @@ add $4, %esp
 _DV_B_func2:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $0, %esp
+sub $4, %esp
 
 mov $7, %eax	# Move 7,R1
 mov %eax, -4(%ebp)
@@ -83,7 +83,7 @@ ret
 _DV_B_func3:
 push %ebp	# prologue
 mov %esp, %ebp
-sub $0, %esp
+sub $4, %esp
 
 mov $8, %eax	# Move 8,R1
 mov %eax, -4(%ebp)

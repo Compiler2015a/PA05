@@ -95,7 +95,7 @@ public class ClassLayout {
 	
 	public int getMethodIndex(String methodName) {
 		int i = 0;
-		for (MethodStrc methodStrc : allMethods) {
+		for (MethodStrc methodStrc : virtualMethods) {
 			if (methodStrc.methodName.equals(methodName))
 				return i;
 			i++;
